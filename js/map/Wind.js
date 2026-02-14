@@ -1,4 +1,4 @@
-import { WIND_DIRECTIONS } from '../utils/Constants.js';
+import { WIND_DIRECTIONS } from '../utils/Constants.js?v=20260214e';
 
 export class Wind {
     constructor() {

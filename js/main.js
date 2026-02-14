@@ -1,8 +1,8 @@
-import { Game } from './core/Game.js?v=20260214d';
-import { Renderer } from './ui/Renderer.js?v=20260214d';
-import { InputHandler } from './core/InputHandler.js?v=20260214d';
-import { ShipPanel } from './ui/ShipPanel.js?v=20260214d';
-import { SettingsMenu } from './ui/SettingsMenu.js?v=20260214d';
+import { Game } from './core/Game.js?v=20260214e';
+import { Renderer } from './ui/Renderer.js?v=20260214e';
+import { InputHandler } from './core/InputHandler.js?v=20260214e';
+import { ShipPanel } from './ui/ShipPanel.js?v=20260214e';
+import { SettingsMenu } from './ui/SettingsMenu.js?v=20260214e';
 
 class GameApp {
     constructor() {
