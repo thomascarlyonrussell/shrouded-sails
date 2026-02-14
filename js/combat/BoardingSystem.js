@@ -95,6 +95,7 @@ export class BoardingSystem {
             defender.owner = attacker.owner;
 
             // Captured ships cannot act on the turn they are captured
+            defender.remainingMovement = 0;
             defender.hasMoved = true;
             defender.hasFired = true;
 

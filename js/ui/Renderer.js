@@ -386,7 +386,7 @@ export class Renderer {
                 this.drawActionIndicators(ship, screenPos.x, screenPos.y);
 
                 // Draw dim overlay if ship has completed all actions
-                if (ship.hasMoved && ship.hasFired) {
+                if (ship.isDone()) {
                     this.drawCompletedOverlay(screenPos.x, screenPos.y);
                 }
             }
@@ -430,7 +430,7 @@ export class Renderer {
         const startY = screenY + 5;
 
         // Draw movement indicator (checkmark if moved)
-        if (ship.hasMoved) {
+        if (ship.isMovementExhausted()) {
             this.ctx.fillStyle = '#3498db';
             this.ctx.strokeStyle = '#000';
             this.ctx.lineWidth = 1;

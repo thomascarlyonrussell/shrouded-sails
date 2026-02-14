@@ -55,12 +55,20 @@ export class Ship {
         return !this.isDestroyed && this.remainingMovement > 0;
     }
 
+    isMovementExhausted() {
+        return this.remainingMovement === 0;
+    }
+
     canAttack() {
         return !this.isDestroyed && !this.hasFired;
     }
 
     canBoard() {
         return !this.isDestroyed && !this.hasFired;
+    }
+
+    isDone() {
+        return !this.canMove() && !this.canAttack() && !this.canBoard();
     }
 
     getVisionRange() {

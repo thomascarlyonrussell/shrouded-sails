@@ -228,7 +228,7 @@ export class ShipPanel {
 
         // Action badges (only for current player)
         if (ship.owner === this.game.currentPlayer && !ship.isDestroyed) {
-            if (ship.hasMoved) {
+            if (ship.isMovementExhausted()) {
                 const badge = document.createElement('span');
                 badge.className = 'ship-card-badge moved';
                 badge.textContent = 'M';
