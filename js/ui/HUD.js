@@ -19,9 +19,14 @@ export class HUD {
             tone: 'info'
         };
         this.combatDetailLevel = 'detailed';
+        this.audioManager = null;
 
         this.setupFeedControls();
         this.updateFeedSignal();
+    }
+
+    setAudioManager(audioManager) {
+        this.audioManager = audioManager;
     }
 
     setupFeedControls() {
@@ -57,6 +62,9 @@ export class HUD {
         }
         this.unreadCount = 0;
         this.updateUnreadBadge();
+        if (this.audioManager) {
+            this.audioManager.play('menu_open');
+        }
     }
 
     closeCombatFeed() {
@@ -69,6 +77,9 @@ export class HUD {
         }
         if (this.combatFeedButtonEl) {
             this.combatFeedButtonEl.setAttribute('aria-expanded', 'false');
+        }
+        if (this.audioManager) {
+            this.audioManager.play('menu_close');
         }
     }
 

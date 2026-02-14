@@ -1018,6 +1018,39 @@ body {
     font-size: 14px;
 }
 
+.audio-controls {
+    margin-left: 32px;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.audio-control-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    align-items: center;
+}
+
+.audio-control-label {
+    color: #d7e3ee;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.audio-control-value {
+    color: #9ec1df;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.audio-slider {
+    grid-column: 1 / -1;
+    width: 100%;
+    accent-color: #3498db;
+}
+
 .settings-modal .action-btn {
     width: 100%;
     margin-top: 20px;
@@ -1046,4 +1079,10 @@ body {
     font-size: 24px;
     padding: 20px 50px;
     min-width: 300px;
+}
+
+@media (max-width: 768px) {
+    .audio-controls {
+        margin-left: 0;
+    }
 }

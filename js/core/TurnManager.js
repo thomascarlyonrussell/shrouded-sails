@@ -7,6 +7,9 @@ export class TurnManager {
 
     startTurn() {
         console.log(`\n=== Turn ${this.game.turnNumber} - Player ${this.game.currentPlayer === PLAYERS.PLAYER1 ? '1' : '2'} ===`);
+        if (this.game.audioManager) {
+            this.game.audioManager.play('turn_start');
+        }
 
         // Phase 1: Wind Phase (only apply at start of Player 1's turn, after Player 2 has finished)
         // Skip on turn 1 entirely to avoid blowing ships off map at start
@@ -45,6 +48,9 @@ export class TurnManager {
         const destroyed = results.filter(r => r.type === 'off-map' || (r.type === 'island-collision' && r.ship.isDestroyed));
         if (destroyed.length > 0) {
             console.log(`${destroyed.length} ships destroyed by wind!`);
+            if (this.game.audioManager) {
+                this.game.audioManager.play('ship_sunk');
+            }
         }
     }
 
@@ -52,6 +58,9 @@ export class TurnManager {
         console.log('--- End Phase ---');
 
         // Check win condition
+        if (this.game.audioManager) {
+            this.game.audioManager.play('turn_end');
+        }
         const winner = this.game.checkWinCondition();
         if (winner) {
             this.game.gameState = 'gameOver';
@@ -91,6 +100,9 @@ export class TurnManager {
 
         // Show modal
         modal.classList.remove('hidden');
+        if (this.game.audioManager) {
+            this.game.audioManager.play('menu_open');
+        }
 
         // Set up start turn button (remove old listeners first)
         const startTurnBtn = document.getElementById('startTurnBtn');
@@ -100,6 +112,9 @@ export class TurnManager {
         // Add new listener
         newBtn.addEventListener('click', () => {
             modal.classList.add('hidden');
+            if (this.game.audioManager) {
+                this.game.audioManager.play('menu_close');
+            }
             this.switchToNextPlayer();
         });
     }
@@ -134,5 +149,8 @@ export class TurnManager {
         message.textContent = `The ${winnerColor} fleet has achieved victory!`;
 
         modal.classList.remove('hidden');
+        if (this.game.audioManager) {
+            this.game.audioManager.play('menu_open');
+        }
     }
 }

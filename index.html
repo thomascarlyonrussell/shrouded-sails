@@ -104,6 +104,32 @@
                         <option value="compact">Compact</option>
                     </select>
                 </div>
+                <div class="setting-item">
+                    <label for="muteAllCheckbox" class="setting-label">
+                        <input type="checkbox" id="muteAllCheckbox">
+                        <span class="setting-title">Audio</span>
+                    </label>
+                    <p class="setting-description">
+                        Adjust overall and channel volume for gameplay effects and UI sounds.
+                    </p>
+                    <div class="audio-controls">
+                        <div class="audio-control-row">
+                            <label for="masterVolumeSlider" class="audio-control-label">Master Volume</label>
+                            <span id="masterVolumeValue" class="audio-control-value">70%</span>
+                            <input type="range" id="masterVolumeSlider" min="0" max="100" step="1" value="70" class="audio-slider">
+                        </div>
+                        <div class="audio-control-row">
+                            <label for="effectsVolumeSlider" class="audio-control-label">Effects Volume</label>
+                            <span id="effectsVolumeValue" class="audio-control-value">80%</span>
+                            <input type="range" id="effectsVolumeSlider" min="0" max="100" step="1" value="80" class="audio-slider">
+                        </div>
+                        <div class="audio-control-row">
+                            <label for="uiVolumeSlider" class="audio-control-label">UI Volume</label>
+                            <span id="uiVolumeValue" class="audio-control-value">70%</span>
+                            <input type="range" id="uiVolumeSlider" min="0" max="100" step="1" value="70" class="audio-slider">
+                        </div>
+                    </div>
+                </div>
             </div>
             <button id="startGameBtn" class="action-btn primary">Start Game</button>
         </div>

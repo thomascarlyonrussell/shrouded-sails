@@ -3,6 +3,7 @@ import { Renderer } from './ui/Renderer.js?v=20260214e';
 import { InputHandler } from './core/InputHandler.js?v=20260214e';
 import { ShipPanel } from './ui/ShipPanel.js?v=20260214e';
 import { SettingsMenu } from './ui/SettingsMenu.js?v=20260214e';
+import { AudioManager } from './audio/AudioManager.js?v=20260214e';
 
 class GameApp {
     constructor() {
@@ -12,14 +13,17 @@ class GameApp {
         this.inputHandler = null;
         this.shipPanel = null;
         this.settingsMenu = null;
+        this.audioManager = new AudioManager();
+        this.audioManager.setupGlobalUIHoverSound();
         this.isRunning = false;
     }
 
-    initialize(settings = null) {
+    async initialize(settings = null) {
         console.log('Initializing Shrouded Sails...');
 
         // Create game
         this.game = new Game();
+        this.game.setAudioManager(this.audioManager);
 
         // Apply settings if provided
         if (settings) {
@@ -27,10 +31,14 @@ class GameApp {
             if (this.game.hud && typeof this.game.hud.setCombatDetailLevel === 'function') {
                 this.game.hud.setCombatDetailLevel(settings.combatDetailLevel);
             }
+            if (settings.audio) {
+                this.audioManager.applySettings(settings.audio);
+            }
         } else if (this.game.hud && typeof this.game.hud.setCombatDetailLevel === 'function') {
             this.game.hud.setCombatDetailLevel('detailed');
         }
 
+        await this.audioManager.preload();
         this.game.initialize();
 
         // Create renderer
@@ -72,6 +80,7 @@ class GameApp {
 
         // Hide game over modal
         document.getElementById('gameOverModal').classList.add('hidden');
+        this.audioManager.play('menu_close');
 
         // Stop current game
         this.stop();
@@ -88,9 +97,7 @@ class GameApp {
 
     showSettingsMenu() {
         if (!this.settingsMenu) {
-            this.settingsMenu = new SettingsMenu((settings) => {
-                this.initialize(settings);
-            });
+            this.settingsMenu = new SettingsMenu((settings) => this.initialize(settings), this.audioManager);
         }
         this.settingsMenu.show();
     }

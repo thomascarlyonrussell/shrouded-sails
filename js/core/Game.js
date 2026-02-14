@@ -21,6 +21,7 @@ export class Game {
         this.fogOfWar = null;
         this.fogEnabled = true; // Default to enabled
         this.combatEventHandler = null;
+        this.audioManager = null;
 
         // UI state
         this.selectedShip = null;
@@ -31,6 +32,13 @@ export class Game {
 
     setCombatEventHandler(handler) {
         this.combatEventHandler = handler;
+    }
+
+    setAudioManager(audioManager) {
+        this.audioManager = audioManager;
+        if (this.hud && typeof this.hud.setAudioManager === 'function') {
+            this.hud.setAudioManager(audioManager);
+        }
     }
 
     initialize() {
@@ -113,6 +121,9 @@ export class Game {
         this.actionMode = ACTION_MODES.NONE;
         this.validMovePositions = [];
         this.validTargets = [];
+        if (this.audioManager) {
+            this.audioManager.play('ship_select');
+        }
 
         console.log(`Selected: ${ship.getStatusText()}`);
         return true;
@@ -131,6 +142,9 @@ export class Game {
 
     enterMoveMode() {
         if (!this.selectedShip || !this.selectedShip.canMove()) {
+            if (this.audioManager) {
+                this.audioManager.play('invalid_action');
+            }
             return false;
         }
 
@@ -142,6 +156,9 @@ export class Game {
 
     enterAttackMode() {
         if (!this.selectedShip || !this.selectedShip.canAttack()) {
+            if (this.audioManager) {
+                this.audioManager.play('invalid_action');
+            }
             return false;
         }
 
@@ -159,6 +176,9 @@ export class Game {
 
     enterBoardMode() {
         if (!this.selectedShip || !this.selectedShip.canBoard()) {
+            if (this.audioManager) {
+                this.audioManager.play('invalid_action');
+            }
             return false;
         }
 
@@ -198,6 +218,9 @@ export class Game {
                             tone: 'warn'
                         }
                     });
+                    if (this.audioManager) {
+                        this.audioManager.play('invalid_action');
+                    }
                 }
             }
         }
@@ -229,16 +252,26 @@ export class Game {
                 tone: 'warn'
             }
         });
+
+        if (this.audioManager) {
+            this.audioManager.play('invalid_action');
+        }
     }
 
     moveShip(x, y) {
         if (this.actionMode !== ACTION_MODES.MOVE || !this.selectedShip) {
+            if (this.audioManager) {
+                this.audioManager.play('invalid_action');
+            }
             return false;
         }
 
         // Check if position is valid
         const isValid = this.validMovePositions.some(pos => pos.x === x && pos.y === y);
         if (!isValid) {
+            if (this.audioManager) {
+                this.audioManager.play('invalid_action');
+            }
             return false;
         }
 
@@ -258,6 +291,9 @@ export class Game {
                 this.selectedShip.takeDamage(1);
                 shipAtDestination.takeDamage(1);
                 console.log(`Both ships take 1 damage from collision`);
+                if ((this.selectedShip.isDestroyed || shipAtDestination.isDestroyed) && this.audioManager) {
+                    this.audioManager.play('ship_sunk');
+                }
 
                 // Find an adjacent empty tile for the moving ship
                 const adjacentTile = this.findAdjacentEmptyTile(x, y, this.selectedShip);
@@ -275,6 +311,9 @@ export class Game {
                 // Exit move mode
                 this.actionMode = ACTION_MODES.NONE;
                 this.validMovePositions = [];
+                if (this.audioManager) {
+                    this.audioManager.play('ship_move');
+                }
 
                 return true;
             }
@@ -289,6 +328,9 @@ export class Game {
         // Exit move mode
         this.actionMode = ACTION_MODES.NONE;
         this.validMovePositions = [];
+        if (this.audioManager) {
+            this.audioManager.play('ship_move');
+        }
 
         return true;
     }
@@ -351,6 +393,9 @@ export class Game {
             } else {
                 // Cancel attack mode
                 this.cancelActionMode();
+                if (this.audioManager) {
+                    this.audioManager.play('invalid_action');
+                }
             }
         } else if (this.actionMode === ACTION_MODES.BOARD) {
             // Board mode - check if clicking on valid target
@@ -361,18 +406,27 @@ export class Game {
             } else {
                 // Cancel board mode
                 this.cancelActionMode();
+                if (this.audioManager) {
+                    this.audioManager.play('invalid_action');
+                }
             }
         }
     }
 
     attackShip(target) {
         if (!this.selectedShip || !this.selectedShip.canAttack()) {
+            if (this.audioManager) {
+                this.audioManager.play('invalid_action');
+            }
             return false;
         }
 
         // Safety check: verify target is visible if fog of war is enabled
         if (this.fogOfWar && !this.fogOfWar.isShipVisible(target, this.currentPlayer)) {
             console.log('Cannot attack target outside vision range');
+            if (this.audioManager) {
+                this.audioManager.play('invalid_action');
+            }
             return false;
         }
 
@@ -385,6 +439,16 @@ export class Game {
 
         // Resolve combat
         const result = CombatResolver.resolveAttack(this.selectedShip, target, distance);
+        if (this.audioManager) {
+            this.audioManager.play('cannon_fire');
+            const cannonResults = result.cannonResults || result.rolls || [];
+            cannonResults.forEach((roll, index) => {
+                this.audioManager.playDelayed(roll.hit ? 'cannon_hit' : 'cannon_miss', index * 90);
+            });
+            if (result.defenderDestroyed) {
+                this.audioManager.playDelayed('ship_sunk', cannonResults.length * 90 + 120);
+            }
+        }
 
         // Show result
         this.hud.showCombatResult(result);
@@ -403,17 +467,32 @@ export class Game {
 
     boardShip(target) {
         if (!this.selectedShip || !this.selectedShip.canBoard()) {
+            if (this.audioManager) {
+                this.audioManager.play('invalid_action');
+            }
             return false;
         }
 
         // Safety check: verify target is visible if fog of war is enabled
         if (this.fogOfWar && !this.fogOfWar.isShipVisible(target, this.currentPlayer)) {
             console.log('Cannot board target outside vision range');
+            if (this.audioManager) {
+                this.audioManager.play('invalid_action');
+            }
             return false;
         }
 
         // Resolve boarding
+        if (this.audioManager) {
+            this.audioManager.play('boarding_attempt');
+        }
         const result = BoardingSystem.attemptBoarding(this.selectedShip, target);
+        if (this.audioManager) {
+            this.audioManager.play(result.success ? 'boarding_success' : 'boarding_failure');
+            if (result.attackerDestroyed || result.defenderDestroyed) {
+                this.audioManager.playDelayed('ship_sunk', 120);
+            }
+        }
 
         // Show result
         this.hud.showBoardingResult(result);
