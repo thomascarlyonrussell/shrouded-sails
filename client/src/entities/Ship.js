@@ -1,4 +1,4 @@
-import { SHIP_TYPES } from '../utils/Constants.js?v=20260214e';
+import { SHIP_TYPES } from '../../../shared/constants.js';
 
 export class Ship {
     constructor(type, owner, x, y) {

@@ -1,0 +1,12 @@
+node_modules/
+client/dist/
+.vercel/
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

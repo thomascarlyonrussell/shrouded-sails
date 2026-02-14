@@ -1,4 +1,4 @@
-import { GRID, CANVAS, COLORS } from '../utils/Constants.js?v=20260214e';
+import { GRID, CANVAS, COLORS } from '../../../shared/constants.js';
 
 export class Renderer {
     constructor(canvas, gameMap, game) {

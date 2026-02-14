@@ -1,9 +1,9 @@
-import { Game } from './core/Game.js?v=20260214e';
-import { Renderer } from './ui/Renderer.js?v=20260214e';
-import { InputHandler } from './core/InputHandler.js?v=20260214e';
-import { ShipPanel } from './ui/ShipPanel.js?v=20260214e';
-import { SettingsMenu } from './ui/SettingsMenu.js?v=20260214e';
-import { AudioManager } from './audio/AudioManager.js?v=20260214e';
+import { Game } from './core/Game.js';
+import { Renderer } from './ui/Renderer.js';
+import { InputHandler } from './core/InputHandler.js';
+import { ShipPanel } from './ui/ShipPanel.js';
+import { SettingsMenu } from './ui/SettingsMenu.js';
+import { AudioManager } from './audio/AudioManager.js';
 
 class GameApp {
     constructor() {

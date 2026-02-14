@@ -1,5 +1,5 @@
-import { FLEET_COMPOSITION, MAP_GENERATION } from '../utils/Constants.js?v=20260214e';
-import { Ship } from './Ship.js?v=20260214e';
+import { FLEET_COMPOSITION, MAP_GENERATION } from '../../../shared/constants.js';
+import { Ship } from './Ship.js';
 
 export class Fleet {
     constructor(owner, gameMap) {

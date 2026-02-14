@@ -1,0 +1,21 @@
+{
+  "name": "shrouded-sails",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "npm run dev -w client",
+    "dev:server": "bun run server/index.ts",
+    "build:client": "npm run build -w client",
+    "preview:client": "npm run preview -w client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

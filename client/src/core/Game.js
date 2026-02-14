@@ -1,12 +1,12 @@
-import { PLAYERS, GAME_STATES, ACTION_MODES } from '../utils/Constants.js?v=20260214e';
-import { GameMap } from '../map/GameMap.js?v=20260214e';
-import { Fleet } from '../entities/Fleet.js?v=20260214e';
-import { Wind } from '../map/Wind.js?v=20260214e';
-import { TurnManager } from './TurnManager.js?v=20260214e';
-import { CombatResolver } from '../combat/CombatResolver.js?v=20260214e';
-import { BoardingSystem } from '../combat/BoardingSystem.js?v=20260214e';
-import { HUD } from '../ui/HUD.js?v=20260214e';
-import { FogOfWar } from '../fog/FogOfWar.js?v=20260214e';
+import { PLAYERS, GAME_STATES, ACTION_MODES } from '../../../shared/constants.js';
+import { GameMap } from '../map/GameMap.js';
+import { Fleet } from '../entities/Fleet.js';
+import { Wind } from '../map/Wind.js';
+import { TurnManager } from './TurnManager.js';
+import { CombatResolver } from '../combat/CombatResolver.js';
+import { BoardingSystem } from '../combat/BoardingSystem.js';
+import { HUD } from '../ui/HUD.js';
+import { FogOfWar } from '../fog/FogOfWar.js';
 
 export class Game {
     constructor() {

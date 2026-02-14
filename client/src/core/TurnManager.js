@@ -1,4 +1,4 @@
-import { PLAYERS } from '../utils/Constants.js?v=20260214e';
+import { PLAYERS } from '../../../shared/constants.js';
 
 export class TurnManager {
     constructor(game) {

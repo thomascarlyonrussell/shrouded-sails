@@ -1,5 +1,5 @@
-import { ActionMenu } from '../ui/ActionMenu.js?v=20260214e';
-import { ACTION_MODES } from '../utils/Constants.js?v=20260214e';
+import { ActionMenu } from '../ui/ActionMenu.js';
+import { ACTION_MODES } from '../../../shared/constants.js';
 
 export class InputHandler {
     constructor(canvas, game, renderer) {

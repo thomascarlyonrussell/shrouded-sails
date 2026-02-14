@@ -1,4 +1,4 @@
-import { TILE_TYPES } from '../utils/Constants.js?v=20260214e';
+import { TILE_TYPES } from '../../../shared/constants.js';
 
 export class Tile {
     constructor(x, y, type = TILE_TYPES.WATER) {
