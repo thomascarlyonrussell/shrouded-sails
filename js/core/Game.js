@@ -145,8 +145,65 @@ export class Game {
             this.fogOfWar,
             this.currentPlayer
         );
+
+        // Surface boarding constraints when enemies are adjacent but ineligible by level.
+        if (this.validTargets.length === 0) {
+            const adjacentVisibleEnemies = enemyShips.filter(enemy => {
+                if (enemy.isDestroyed) return false;
+                if (this.fogOfWar && !this.fogOfWar.isShipVisible(enemy, this.currentPlayer)) return false;
+                return this.map.getDistance(this.selectedShip.x, this.selectedShip.y, enemy.x, enemy.y) === 1;
+            });
+
+            if (adjacentVisibleEnemies.length > 0) {
+                const blockedByLevel = adjacentVisibleEnemies.every(enemy => this.selectedShip.type <= enemy.type);
+                if (blockedByLevel) {
+                    const attacker = this.selectedShip;
+                    this.hud.addCombatLogEntry({
+                        type: 'info',
+                        attackerOwner: attacker.owner,
+                        outcome: 'failed',
+                        summary: `Boarding blocked: ${attacker.name} cannot capture equal/higher-level ships`,
+                        details: [
+                            `${attacker.name} (Lvl ${attacker.type}) can only board ships below its level`,
+                            `Adjacent targets are level ${adjacentVisibleEnemies.map(enemy => enemy.type).join(', ')}`
+                        ],
+                        signal: {
+                            icon: '🛡️',
+                            text: 'Boarding unavailable',
+                            tone: 'warn'
+                        }
+                    });
+                }
+            }
+        }
+
         console.log(`Board mode: ${this.validTargets.length} valid targets`);
         return true;
+    }
+
+    isBoardingBlockedByLevel(attacker, target) {
+        if (!attacker || !target) return false;
+        if (target.owner === attacker.owner) return false;
+        const distance = this.map.getDistance(attacker.x, attacker.y, target.x, target.y);
+        return distance === 1 && attacker.type <= target.type;
+    }
+
+    logBoardingBlockedByLevel(attacker, target) {
+        this.hud.addCombatLogEntry({
+            type: 'info',
+            attackerOwner: attacker.owner,
+            outcome: 'failed',
+            summary: `Boarding blocked: ${attacker.name} (Lvl ${attacker.type}) cannot board ${target.name} (Lvl ${target.type})`,
+            details: [
+                'Boarding is only allowed against lower-level ships',
+                `${attacker.name} must target a ship below level ${attacker.type}`
+            ],
+            signal: {
+                icon: '🛡️',
+                text: 'Boarding blocked by level',
+                tone: 'warn'
+            }
+        });
     }
 
     moveShip(x, y) {
@@ -274,6 +331,8 @@ export class Game {
             // Board mode - check if clicking on valid target
             if (clickedShip && this.validTargets.includes(clickedShip)) {
                 this.boardShip(clickedShip);
+            } else if (clickedShip && this.selectedShip && this.isBoardingBlockedByLevel(this.selectedShip, clickedShip)) {
+                this.logBoardingBlockedByLevel(this.selectedShip, clickedShip);
             } else {
                 // Cancel board mode
                 this.cancelActionMode();
