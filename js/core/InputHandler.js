@@ -7,6 +7,14 @@ export class InputHandler {
         this.game = game;
         this.renderer = renderer;
         this.actionMenu = new ActionMenu(game);
+        this.headerElements = null;
+        this.headerStateCache = {
+            playerText: null,
+            turnText: null,
+            windArrow: null,
+            windName: null,
+            windStrength: null
+        };
 
         this.setupEventListeners();
     }
@@ -124,18 +132,61 @@ export class InputHandler {
         this.actionMenu.highlightActiveMode(this.game.actionMode);
 
         // Update header info
-        const playerInfo = document.getElementById('playerInfo');
+        this.updateHeaderStatus();
+    }
+
+    getHeaderElements() {
+        if (!this.headerElements) {
+            this.headerElements = {
+                playerInfo: document.getElementById('playerInfo'),
+                turnInfo: document.getElementById('turnInfo'),
+                windArrow: document.getElementById('windDirectionArrow'),
+                windName: document.getElementById('windDirectionName'),
+                windStrength: document.getElementById('windStrengthValue')
+            };
+        }
+
+        return this.headerElements;
+    }
+
+    updateHeaderStatus() {
+        const elements = this.getHeaderElements();
+        if (!elements.playerInfo || !elements.turnInfo || !elements.windArrow || !elements.windName || !elements.windStrength) {
+            return;
+        }
+
         const playerNum = this.game.currentPlayer === 'player1' ? '1' : '2';
         const playerColor = this.game.currentPlayer === 'player1' ? 'Red' : 'Blue';
-        playerInfo.textContent = `Player: ${playerNum} (${playerColor})`;
+        const playerText = `Player: ${playerNum} (${playerColor})`;
+        const turnText = `Turn: ${this.game.turnNumber}`;
 
-        const turnInfo = document.getElementById('turnInfo');
-        turnInfo.textContent = `Turn: ${this.game.turnNumber}`;
+        const windArrow = this.game.wind ? this.game.wind.getDirectionArrow() : '-';
+        const windName = this.game.wind ? this.game.wind.getDirectionName() : 'Calm';
+        const windStrength = this.game.wind ? String(this.game.wind.strength) : '0';
 
-        // Update wind info
-        if (this.game.wind) {
-            const windInfo = document.getElementById('windInfo');
-            windInfo.textContent = `Wind: ${this.game.wind.getDirectionName()} (${this.game.wind.getDirectionArrow()}) Str: ${this.game.wind.strength}`;
+        if (this.headerStateCache.playerText !== playerText) {
+            elements.playerInfo.textContent = playerText;
+            this.headerStateCache.playerText = playerText;
+        }
+
+        if (this.headerStateCache.turnText !== turnText) {
+            elements.turnInfo.textContent = turnText;
+            this.headerStateCache.turnText = turnText;
+        }
+
+        if (this.headerStateCache.windArrow !== windArrow) {
+            elements.windArrow.textContent = windArrow;
+            this.headerStateCache.windArrow = windArrow;
+        }
+
+        if (this.headerStateCache.windName !== windName) {
+            elements.windName.textContent = windName;
+            this.headerStateCache.windName = windName;
+        }
+
+        if (this.headerStateCache.windStrength !== windStrength) {
+            elements.windStrength.textContent = windStrength;
+            this.headerStateCache.windStrength = windStrength;
         }
     }
 }

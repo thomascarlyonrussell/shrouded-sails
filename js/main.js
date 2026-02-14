@@ -1,8 +1,8 @@
-import { Game } from './core/Game.js';
-import { Renderer } from './ui/Renderer.js';
-import { InputHandler } from './core/InputHandler.js';
-import { ShipPanel } from './ui/ShipPanel.js';
-import { SettingsMenu } from './ui/SettingsMenu.js';
+import { Game } from './core/Game.js?v=20260214d';
+import { Renderer } from './ui/Renderer.js?v=20260214d';
+import { InputHandler } from './core/InputHandler.js?v=20260214d';
+import { ShipPanel } from './ui/ShipPanel.js?v=20260214d';
+import { SettingsMenu } from './ui/SettingsMenu.js?v=20260214d';
 
 class GameApp {
     constructor() {
@@ -99,6 +99,11 @@ class GameApp {
 
     render() {
         if (!this.isRunning) return;
+
+        // Keep header status in sync with turn/wind changes that happen outside direct input events.
+        if (this.inputHandler) {
+            this.inputHandler.updateHeaderStatus();
+        }
 
         // Update ship panel
         this.shipPanel.update();

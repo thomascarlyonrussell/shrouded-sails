@@ -32,7 +32,6 @@ export class Renderer {
         this.drawSelection();
         this.drawHoveredShipHighlight();
         this.drawGrid();
-        this.drawWindIndicator();
         this.drawCombatEffects();
         this.ctx.restore();
     }
@@ -593,60 +592,6 @@ export class Renderer {
             this.ctx.fillStyle = COLORS.ATTACK_RANGE;
             this.ctx.fillRect(screenPos.x, screenPos.y, this.tileSize, this.tileSize);
         }
-    }
-
-    drawWindIndicator() {
-        if (!this.game.wind) return;
-
-        const wind = this.game.wind;
-        const padding = 20;
-        const x = this.canvas.width - 100;
-        const y = padding;
-
-        // Draw background circle
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, 30, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        // Draw wind arrow
-        const vector = wind.getDirectionVector();
-        const arrowLength = 20 + (wind.strength * 3);
-
-        this.ctx.strokeStyle = '#fff';
-        this.ctx.fillStyle = '#fff';
-        this.ctx.lineWidth = 3;
-
-        // Arrow line
-        this.ctx.beginPath();
-        this.ctx.moveTo(x, y);
-        this.ctx.lineTo(x + vector.dx * arrowLength, y + vector.dy * arrowLength);
-        this.ctx.stroke();
-
-        // Arrow head
-        const headSize = 8;
-        const endX = x + vector.dx * arrowLength;
-        const endY = y + vector.dy * arrowLength;
-        const angle = Math.atan2(vector.dy, vector.dx);
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(endX, endY);
-        this.ctx.lineTo(
-            endX - headSize * Math.cos(angle - Math.PI / 6),
-            endY - headSize * Math.sin(angle - Math.PI / 6)
-        );
-        this.ctx.lineTo(
-            endX - headSize * Math.cos(angle + Math.PI / 6),
-            endY - headSize * Math.sin(angle + Math.PI / 6)
-        );
-        this.ctx.closePath();
-        this.ctx.fill();
-
-        // Draw strength indicator
-        this.ctx.font = 'bold 14px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(wind.strength.toString(), x, y + 45);
     }
 
     drawSloop(shipColor, shipSize, shipHeight) {

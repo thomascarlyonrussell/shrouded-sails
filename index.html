@@ -4,24 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shrouded Sails</title>
-    <link rel="stylesheet" href="css/style.css?v=20260214b">
+    <link rel="stylesheet" href="css/style.css?v=20260214d">
 </head>
 <body>
     <div class="game-container">
         <header class="game-header">
             <h1 class="game-title">Shrouded Sails</h1>
             <div class="header-info">
-                <span id="windInfo">Wind: N (↑) Str: 0</span>
-                <span id="turnInfo">Turn: 1</span>
-                <span id="playerInfo">Player: 1</span>
-                <button id="combatFeedButton" class="combat-feed-button" type="button" aria-expanded="false" aria-controls="combatFeedPanel">
-                    <span id="combatFeedStatusIcon" class="combat-feed-status-icon">🧭</span>
-                    <span class="combat-feed-text">
-                        <span class="combat-feed-title">Combat Feed</span>
-                        <span id="combatFeedStatusText" class="combat-feed-status-text">Quiet seas</span>
-                    </span>
-                    <span id="combatFeedUnread" class="combat-feed-unread hidden">0</span>
-                </button>
+                <div class="header-zone header-zone-left">
+                    <span id="turnInfo" class="header-pill">Turn: 1</span>
+                    <span id="playerInfo" class="header-pill">Player: 1</span>
+                </div>
+                <div class="header-zone header-zone-center">
+                    <div class="wind-widget" aria-label="Wind status">
+                        <div class="wind-compass" aria-hidden="true">
+                            <span id="windDirectionArrow" class="wind-direction-arrow">↑</span>
+                        </div>
+                        <div class="wind-meta">
+                            <span class="wind-label">Wind</span>
+                            <div class="wind-values">
+                                <span id="windDirectionName">N</span>
+                                <span class="wind-separator">•</span>
+                                <span>Str <span id="windStrengthValue">0</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-zone header-zone-right">
+                    <button id="combatFeedButton" class="combat-feed-button" type="button" aria-expanded="false" aria-controls="combatFeedPanel">
+                        <span id="combatFeedStatusIcon" class="combat-feed-status-icon">🧭</span>
+                        <span class="combat-feed-text">
+                            <span class="combat-feed-title">Combat Feed</span>
+                            <span id="combatFeedStatusText" class="combat-feed-status-text">Quiet seas</span>
+                        </span>
+                        <span id="combatFeedUnread" class="combat-feed-unread hidden">0</span>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -108,6 +126,6 @@
         <div id="combatLogList" class="combat-log-list"></div>
     </aside>
 
-    <script type="module" src="js/main.js?v=20260214b"></script>
+    <script type="module" src="js/main.js?v=20260214d"></script>
 </body>
 </html>
