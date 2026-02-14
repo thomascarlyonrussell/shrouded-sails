@@ -618,6 +618,10 @@ export class Renderer {
         const ghostShips = this.game.fogOfWar.getGhostShips(this.game.currentPlayer);
 
         for (const ghostData of ghostShips) {
+            // Safety check: never render a ghost when the real ship is visible
+            if (this.game.fogOfWar.isShipVisible(ghostData.ship, this.game.currentPlayer)) {
+                continue;
+            }
             this.drawGhostShip(ghostData.ship, ghostData.lastX, ghostData.lastY);
         }
     }

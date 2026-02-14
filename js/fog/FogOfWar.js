@@ -1,7 +1,15 @@
 export class FogOfWar {
     constructor(game) {
         this.game = game;
-        this.lastKnownPositions = new Map(); // shipId -> {x, y, ship}
+        // viewingPlayer -> (shipId -> {x, y, ship})
+        this.lastKnownPositionsByPlayer = new Map();
+    }
+
+    getPlayerGhostMap(viewingPlayer) {
+        if (!this.lastKnownPositionsByPlayer.has(viewingPlayer)) {
+            this.lastKnownPositionsByPlayer.set(viewingPlayer, new Map());
+        }
+        return this.lastKnownPositionsByPlayer.get(viewingPlayer);
     }
 
     calculateVisionCoverage(playerOwner) {
@@ -76,6 +84,8 @@ export class FogOfWar {
     }
 
     updateLastKnownPositions(viewingPlayer) {
+        const playerGhostMap = this.getPlayerGhostMap(viewingPlayer);
+
         // Get all enemy ships
         const enemyPlayer = viewingPlayer === 'player1' ? 'player2' : 'player1';
         const enemyFleet = this.game.fleets[enemyPlayer];
@@ -93,7 +103,7 @@ export class FogOfWar {
             // Check if this enemy ship is currently visible
             if (this.isShipVisible(enemyShip, viewingPlayer)) {
                 // Update last known position
-                this.lastKnownPositions.set(enemyShip.id, {
+                playerGhostMap.set(enemyShip.id, {
                     x: enemyShip.x,
                     y: enemyShip.y,
                     ship: enemyShip
@@ -104,8 +114,9 @@ export class FogOfWar {
 
     getGhostShips(viewingPlayer) {
         const ghostShips = [];
+        const playerGhostMap = this.getPlayerGhostMap(viewingPlayer);
 
-        for (const [shipId, lastKnown] of this.lastKnownPositions.entries()) {
+        for (const [shipId, lastKnown] of playerGhostMap.entries()) {
             const ship = lastKnown.ship;
 
             // Skip if ship is destroyed
@@ -113,7 +124,12 @@ export class FogOfWar {
                 continue;
             }
 
-            // Check if ship is currently visible
+            // Defensive guard: ghosts should only represent enemy ships
+            if (ship.owner === viewingPlayer) {
+                continue;
+            }
+
+            // Only include ghosts for ships currently outside vision
             if (!this.isShipVisible(ship, viewingPlayer)) {
                 // Ship is not visible, so it's a ghost
                 ghostShips.push({
@@ -128,6 +144,8 @@ export class FogOfWar {
     }
 
     clearGhostShip(shipId) {
-        this.lastKnownPositions.delete(shipId);
+        for (const ghostMap of this.lastKnownPositionsByPlayer.values()) {
+            ghostMap.delete(shipId);
+        }
     }
 }
