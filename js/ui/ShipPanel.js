@@ -51,26 +51,55 @@ export class ShipPanel {
         for (let i = 0; i < Math.min(cards.length, ships.length); i++) {
             const card = cards[i];
             const ship = ships[i];
+            const visibilityState = this.getEnemyVisibilityState(ship);
+            const isVisibleFull = visibilityState === 'VISIBLE_FULL';
 
             // Update selected state
-            if (this.game.selectedShip && this.game.selectedShip.id === ship.id) {
-                card.classList.add('selected');
-            } else {
-                card.classList.remove('selected');
+            const isSelected = this.game.selectedShip && this.game.selectedShip.id === ship.id;
+            card.classList.toggle('selected', isSelected);
+
+            // Never leak destroyed state when enemy is hidden by fog.
+            card.classList.toggle('destroyed', isVisibleFull && ship.isDestroyed);
+
+            this.applyCardVisibilityState(card, ship, visibilityState);
+
+            // Clear stale hover if this ship is no longer allowed to reveal position.
+            if (this.hoveredShip && this.hoveredShip.id === ship.id && !this.isShipInteractableInPanel(ship)) {
+                this.hoveredShip = null;
+            }
+        }
+    }
+
+    applyCardVisibilityState(card, ship, visibilityState) {
+        const isVisibleFull = visibilityState === 'VISIBLE_FULL';
+        card.classList.toggle('is-visible-full', isVisibleFull);
+        card.classList.toggle('is-hidden-unknown', visibilityState === 'HIDDEN_UNKNOWN');
+        card.classList.toggle('is-hidden-ghost', visibilityState === 'HIDDEN_GHOST');
+        card.classList.toggle('is-obscured', !isVisibleFull);
+
+        const nameElement = card.querySelector('.ship-card-name');
+        const typeElement = card.querySelector('.ship-card-type');
+        const healthContainer = card.querySelector('.ship-card-health');
+        const healthFill = card.querySelector('.ship-card-health-fill');
+        const healthText = card.querySelector('.ship-card-health-text');
+        const statusContainer = this.getOrCreateStatusContainer(card);
+
+        if (isVisibleFull) {
+            if (nameElement) {
+                nameElement.textContent = ship.name;
             }
 
-            // Update destroyed state
-            if (ship.isDestroyed) {
-                card.classList.add('destroyed');
+            if (typeElement) {
+                typeElement.textContent = `Lvl ${ship.type}`;
             }
 
-            // Update health bar
-            const healthFill = card.querySelector('.ship-card-health-fill');
+            if (healthContainer) {
+                healthContainer.style.display = 'flex';
+            }
+
             if (healthFill) {
                 const healthPercent = (ship.currentHP / ship.maxHP) * 100;
                 healthFill.style.width = `${healthPercent}%`;
-
-                // Update health bar color
                 healthFill.classList.remove('low', 'medium');
                 if (healthPercent <= 25) {
                     healthFill.classList.add('low');
@@ -79,16 +108,27 @@ export class ShipPanel {
                 }
             }
 
-            // Update health text
-            const healthText = card.querySelector('.ship-card-health-text');
             if (healthText) {
                 healthText.textContent = `HP: ${ship.currentHP}/${ship.maxHP}`;
             }
 
-            // Update status badges
-            const statusContainer = this.getOrCreateStatusContainer(card);
             this.renderStatusBadges(statusContainer, ship);
+            return;
         }
+
+        if (nameElement) {
+            nameElement.textContent = 'Unknown Contact';
+        }
+
+        if (typeElement) {
+            typeElement.textContent = '--';
+        }
+
+        if (healthContainer) {
+            healthContainer.style.display = 'none';
+        }
+
+        this.renderVisibilityBadge(statusContainer, visibilityState);
     }
 
     createShipCard(ship, playerKey) {
@@ -158,17 +198,17 @@ export class ShipPanel {
         card.appendChild(status);
 
         // Add event listeners
-        if (!ship.isDestroyed) {
-            card.addEventListener('mouseenter', () => this.handleCardHover(ship));
-            card.addEventListener('mouseleave', () => this.handleCardLeave());
-            card.addEventListener('click', () => this.handleCardClick(ship));
-        }
+        card.addEventListener('mouseenter', () => this.handleCardHover(ship));
+        card.addEventListener('mouseleave', () => this.handleCardLeave());
+        card.addEventListener('click', () => this.handleCardClick(ship));
+
+        this.applyCardVisibilityState(card, ship, this.getEnemyVisibilityState(ship));
 
         return card;
     }
 
     handleCardHover(ship) {
-        this.hoveredShip = ship;
+        this.hoveredShip = this.isShipInteractableInPanel(ship) ? ship : null;
     }
 
     handleCardLeave() {
@@ -205,6 +245,56 @@ export class ShipPanel {
             card.appendChild(statusContainer);
         }
         return statusContainer;
+    }
+
+    isEnemyShipForViewer(ship) {
+        return ship.owner !== this.game.currentPlayer;
+    }
+
+    hasGhostRecord(ship, viewingPlayer) {
+        if (!this.game.fogOfWar) return false;
+        const ghostMap = this.game.fogOfWar.getPlayerGhostMap(viewingPlayer);
+        return ghostMap.has(ship.id);
+    }
+
+    getEnemyVisibilityState(ship) {
+        if (!this.isEnemyShipForViewer(ship)) {
+            return 'VISIBLE_FULL';
+        }
+
+        if (!this.game.fogOfWar) {
+            return 'VISIBLE_FULL';
+        }
+
+        if (this.game.fogOfWar.isShipVisible(ship, this.game.currentPlayer)) {
+            return 'VISIBLE_FULL';
+        }
+
+        return this.hasGhostRecord(ship, this.game.currentPlayer)
+            ? 'HIDDEN_GHOST'
+            : 'HIDDEN_UNKNOWN';
+    }
+
+    isShipInteractableInPanel(ship) {
+        if (ship.isDestroyed) return false;
+        return this.getEnemyVisibilityState(ship) === 'VISIBLE_FULL';
+    }
+
+    renderVisibilityBadge(statusContainer, visibilityState) {
+        statusContainer.innerHTML = '';
+        const badge = document.createElement('span');
+        badge.className = 'ship-card-visibility-badge';
+
+        if (visibilityState === 'HIDDEN_GHOST') {
+            badge.classList.add('ghost');
+            badge.textContent = 'Last Known';
+        } else {
+            badge.classList.add('fog-hidden');
+            badge.textContent = 'Hidden';
+        }
+
+        statusContainer.appendChild(badge);
+        statusContainer.style.display = 'flex';
     }
 
     renderStatusBadges(statusContainer, ship) {

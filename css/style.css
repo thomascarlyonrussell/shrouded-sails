@@ -600,11 +600,24 @@ body {
     overflow: hidden;
 }
 
+.ship-card.is-obscured {
+    background: rgba(18, 26, 38, 0.92);
+    border-color: #2a3f57;
+    cursor: default;
+}
+
 .ship-card:hover {
     background: rgba(52, 152, 219, 0.2);
     border-color: #3498db;
     transform: translateX(2px);
     box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.ship-card.is-obscured:hover {
+    background: rgba(18, 26, 38, 0.92);
+    border-color: #2a3f57;
+    transform: none;
+    box-shadow: none;
 }
 
 .ship-card.selected {
@@ -613,9 +626,20 @@ body {
     box-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
 }
 
+.ship-card.is-obscured.selected {
+    border-color: #2a3f57;
+    background: rgba(18, 26, 38, 0.92);
+    box-shadow: none;
+}
+
 .ship-card.destroyed {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+.ship-card.is-obscured.destroyed {
+    opacity: 1;
+    cursor: default;
 }
 
 .ship-card.destroyed:hover {
@@ -628,6 +652,10 @@ body {
 
 .ship-card.player2 {
     border-left: 4px solid #2980b9;
+}
+
+.ship-card.is-hidden-ghost {
+    border-style: dashed;
 }
 
 .ship-card-header {
@@ -725,6 +753,30 @@ body {
 .ship-card-badge.captured {
     background: #9b59b6;
     color: white;
+}
+
+.ship-card-visibility-badge {
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-weight: 700;
+    letter-spacing: 0.25px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    border: 1px solid rgba(140, 160, 180, 0.45);
+    background: rgba(26, 36, 49, 0.9);
+    color: #aebfd0;
+}
+
+.ship-card-visibility-badge.fog-hidden {
+    border-color: rgba(123, 142, 161, 0.5);
+    color: #a3b4c5;
+}
+
+.ship-card-visibility-badge.ghost {
+    border-color: rgba(120, 153, 189, 0.65);
+    color: #c6daf0;
+    background: rgba(25, 43, 64, 0.9);
 }
 
 /* Responsive design */

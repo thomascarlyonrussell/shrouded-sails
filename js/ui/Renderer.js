@@ -558,6 +558,15 @@ export class Renderer {
         if (!this.hoveredShip || this.hoveredShip.isDestroyed) return;
 
         const ship = this.hoveredShip;
+
+        // Defense-in-depth: never highlight hidden enemy positions through panel hover.
+        if (this.game.fogOfWar) {
+            const isEnemyShip = ship.owner !== this.game.currentPlayer;
+            if (isEnemyShip && !this.game.fogOfWar.isShipVisible(ship, this.game.currentPlayer)) {
+                return;
+            }
+        }
+
         const screenPos = this.gridToScreen(ship.x, ship.y);
 
         // Draw cyan glow outline for hovered ship from panel
