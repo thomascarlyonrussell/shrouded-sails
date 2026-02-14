@@ -1,0 +1,496 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #ecf0f1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.game-container {
+    background: #0f1419;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    max-width: 1640px;
+}
+
+.game-header {
+    background: #1e2836;
+    padding: 15px 20px;
+    border-bottom: 2px solid #2c5f8d;
+}
+
+.game-title {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0 10px 0;
+    color: #ecf0f1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    letter-spacing: 2px;
+}
+
+.header-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.header-info span {
+    padding: 5px 15px;
+    background: rgba(52, 152, 219, 0.2);
+    border-radius: 5px;
+}
+
+.game-board {
+    display: flex;
+    gap: 15px;
+    background: #0a0e14;
+    padding: 20px;
+}
+
+.canvas-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+}
+
+#gameCanvas {
+    border: 3px solid #2c5f8d;
+    border-radius: 5px;
+    cursor: crosshair;
+    box-shadow: 0 0 20px rgba(52, 152, 219, 0.3);
+}
+
+.game-footer {
+    background: #1e2836;
+    padding: 15px 20px;
+    border-top: 2px solid #2c5f8d;
+}
+
+.ship-info {
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #bdc3c7;
+}
+
+#selectedShipInfo {
+    display: inline-block;
+    padding: 8px 15px;
+    background: rgba(52, 152, 219, 0.15);
+    border-radius: 5px;
+    border-left: 3px solid #3498db;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    border: 2px solid #2c5f8d;
+    border-radius: 5px;
+    background: linear-gradient(135deg, #2c5f8d 0%, #1e3a5f 100%);
+    color: #ecf0f1;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    border-color: #3498db;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+}
+
+.action-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+    border-color: #34495e;
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    border-color: #27ae60;
+}
+
+.action-btn.primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    border-color: #2ecc71;
+    box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+}
+
+.action-btn.danger {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    border-color: #e74c3c;
+}
+
+.action-btn.danger:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+    border-color: #e67e22;
+    box-shadow: 0 5px 15px rgba(230, 126, 34, 0.4);
+}
+
+.action-btn.active {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    border-color: #f39c12;
+    box-shadow: 0 0 15px rgba(243, 156, 18, 0.6);
+}
+
+/* Ship Status Panels */
+.ships-panel {
+    width: 180px;
+    background: #1e2836;
+    border-radius: 8px;
+    padding: 15px;
+    border: 2px solid #2c5f8d;
+}
+
+.ships-panel h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #2c5f8d;
+    text-align: center;
+}
+
+.ships-panel-left h3 {
+    color: #c0392b;
+}
+
+.ships-panel-right h3 {
+    color: #2980b9;
+}
+
+.ships-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ship-card {
+    background: rgba(52, 152, 219, 0.1);
+    border: 2px solid #2c5f8d;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.ship-card:hover {
+    background: rgba(52, 152, 219, 0.2);
+    border-color: #3498db;
+    transform: translateX(3px);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.ship-card.selected {
+    border-color: #f1c40f;
+    background: rgba(241, 196, 15, 0.15);
+    box-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
+}
+
+.ship-card.destroyed {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.ship-card.destroyed:hover {
+    transform: none;
+}
+
+.ship-card.player1 {
+    border-left: 4px solid #c0392b;
+}
+
+.ship-card.player2 {
+    border-left: 4px solid #2980b9;
+}
+
+.ship-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.ship-card-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #ecf0f1;
+}
+
+.ship-card-type {
+    font-size: 12px;
+    color: #bdc3c7;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.ship-card-health {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ship-card-health-text {
+    font-size: 12px;
+    color: #bdc3c7;
+}
+
+.ship-card-health-bar {
+    width: 100%;
+    height: 8px;
+    background: #34495e;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.ship-card-health-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+    transition: width 0.3s ease;
+}
+
+.ship-card-health-fill.low {
+    background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.ship-card-health-fill.medium {
+    background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+}
+
+.ship-card-status {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+    justify-content: center;
+}
+
+.ship-card-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+.ship-card-badge.moved {
+    background: #3498db;
+    color: white;
+}
+
+.ship-card-badge.fired {
+    background: #e74c3c;
+    color: white;
+}
+
+.ship-card-badge.flagship {
+    background: #f1c40f;
+    color: #000;
+}
+
+.ship-card-badge.captured {
+    background: #9b59b6;
+    color: white;
+}
+
+/* Responsive design */
+@media (max-width: 1300px) {
+    .game-container {
+        max-width: 100%;
+    }
+
+    #gameCanvas {
+        max-width: 100%;
+        height: auto;
+    }
+}
+
+/* Modal styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgb(0, 0, 0);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #1e2836 0%, #0f1419 100%);
+    border: 3px solid #2c5f8d;
+    border-radius: 15px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 0 50px rgba(52, 152, 219, 0.5);
+    max-width: 500px;
+}
+
+.modal-content h2 {
+    color: #ecf0f1;
+    font-size: 36px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+}
+
+.modal-content p {
+    color: #bdc3c7;
+    font-size: 20px;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 1400px) {
+    .ships-panel {
+        width: 140px;
+        padding: 10px;
+    }
+
+    .ship-card {
+        padding: 8px;
+    }
+
+    .ship-card-name {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .ships-panel {
+        display: none;
+    }
+
+    .game-board {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-info {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-btn {
+        min-width: 100%;
+    }
+
+    .modal-content {
+        margin: 20px;
+        padding: 30px;
+    }
+}
+
+/* Settings Modal Styles */
+.settings-modal {
+    max-width: 600px;
+    text-align: left;
+}
+
+.settings-section {
+    margin: 30px 0;
+}
+
+.setting-item {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: rgba(44, 95, 141, 0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(44, 95, 141, 0.4);
+}
+
+.setting-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.setting-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #3498db;
+}
+
+.setting-title {
+    color: #ecf0f1;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.setting-description {
+    color: #bdc3c7;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+    padding-left: 32px;
+}
+
+.settings-modal .action-btn {
+    width: 100%;
+    margin-top: 20px;
+    font-size: 18px;
+    padding: 15px;
+}
+
+/* Turn Transition Modal Styles */
+.turn-transition {
+    max-width: 500px;
+    text-align: center;
+}
+
+.turn-transition h2 {
+    font-size: 42px;
+    margin-bottom: 15px;
+}
+
+.turn-transition p {
+    font-size: 18px;
+    color: #95a5a6;
+    margin-bottom: 35px;
+}
+
+.action-btn.large {
+    font-size: 24px;
+    padding: 20px 50px;
+    min-width: 300px;
+}

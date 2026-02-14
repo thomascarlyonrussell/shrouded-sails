@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shrouded Sails</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="game-container">
+        <header class="game-header">
+            <h1 class="game-title">Shrouded Sails</h1>
+            <div class="header-info">
+                <span id="windInfo">Wind: N (↑) Str: 0</span>
+                <span id="turnInfo">Turn: 1</span>
+                <span id="playerInfo">Player: 1</span>
+            </div>
+        </header>
+
+        <div class="game-board">
+            <!-- Player 1 Ships Panel (Left) -->
+            <aside class="ships-panel ships-panel-left">
+                <h3>Red Fleet</h3>
+                <div id="player1Ships" class="ships-list"></div>
+            </aside>
+
+            <!-- Game Canvas -->
+            <div class="canvas-container">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+
+            <!-- Player 2 Ships Panel (Right) -->
+            <aside class="ships-panel ships-panel-right">
+                <h3>Blue Fleet</h3>
+                <div id="player2Ships" class="ships-list"></div>
+            </aside>
+        </div>
+
+        <footer class="game-footer">
+            <div class="ship-info">
+                <span id="selectedShipInfo">No ship selected</span>
+            </div>
+            <div class="action-buttons">
+                <button id="moveBtn" class="action-btn" disabled>Move</button>
+                <button id="fireBtn" class="action-btn" disabled>Fire Cannons</button>
+                <button id="boardBtn" class="action-btn" disabled>Board Enemy</button>
+                <button id="endTurnBtn" class="action-btn primary">End Turn</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content settings-modal">
+            <h2>Game Settings</h2>
+            <div class="settings-section">
+                <div class="setting-item">
+                    <label for="fogOfWarCheckbox" class="setting-label">
+                        <input type="checkbox" id="fogOfWarCheckbox" checked>
+                        <span class="setting-title">Fog of War</span>
+                    </label>
+                    <p class="setting-description">
+                        Enable tactical mode with limited visibility. Enemy ships are only visible within your fleet's vision range.
+                        Larger ships have better vision (Flagship=4, Frigate=3, Sloop=2).
+                    </p>
+                </div>
+            </div>
+            <button id="startGameBtn" class="action-btn primary">Start Game</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="gameOverTitle">Game Over!</h2>
+            <p id="gameOverMessage"></p>
+            <button id="restartBtn" class="action-btn primary">Play Again</button>
+        </div>
+    </div>
+
+    <!-- Turn Transition Modal -->
+    <div id="turnTransitionModal" class="modal hidden">
+        <div class="modal-content turn-transition">
+            <h2 id="turnTransitionTitle">Player 2's Turn</h2>
+            <p id="turnTransitionMessage">Pass the device to the other player</p>
+            <button id="startTurnBtn" class="action-btn primary large">Click to Start Turn</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
