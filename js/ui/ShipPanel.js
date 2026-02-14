@@ -86,43 +86,8 @@ export class ShipPanel {
             }
 
             // Update status badges
-            const statusContainer = card.querySelector('.ship-card-status');
-            if (statusContainer) {
-                statusContainer.innerHTML = '';
-
-                // Flagship badge
-                if (ship.isFlagship) {
-                    const badge = document.createElement('span');
-                    badge.className = 'ship-card-badge flagship';
-                    badge.textContent = '⭐ FLAG';
-                    statusContainer.appendChild(badge);
-                }
-
-                // Captured badge
-                if (ship.isCaptured) {
-                    const badge = document.createElement('span');
-                    badge.className = 'ship-card-badge captured';
-                    badge.textContent = 'CAPTURED';
-                    statusContainer.appendChild(badge);
-                }
-
-                // Action badges (only for current player)
-                if (ship.owner === this.game.currentPlayer && !ship.isDestroyed) {
-                    if (ship.hasMoved) {
-                        const badge = document.createElement('span');
-                        badge.className = 'ship-card-badge moved';
-                        badge.textContent = 'M';
-                        statusContainer.appendChild(badge);
-                    }
-
-                    if (ship.hasFired) {
-                        const badge = document.createElement('span');
-                        badge.className = 'ship-card-badge fired';
-                        badge.textContent = 'A';
-                        statusContainer.appendChild(badge);
-                    }
-                }
-            }
+            const statusContainer = this.getOrCreateStatusContainer(card);
+            this.renderStatusBadges(statusContainer, ship);
         }
     }
 
@@ -185,43 +150,12 @@ export class ShipPanel {
         const status = document.createElement('div');
         status.className = 'ship-card-status';
 
-        if (ship.isFlagship) {
-            const badge = document.createElement('span');
-            badge.className = 'ship-card-badge flagship';
-            badge.textContent = '⭐ FLAG';
-            status.appendChild(badge);
-        }
-
-        if (ship.isCaptured) {
-            const badge = document.createElement('span');
-            badge.className = 'ship-card-badge captured';
-            badge.textContent = 'CAPTURED';
-            status.appendChild(badge);
-        }
-
-        // Only show action badges for current player's ships
-        if (ship.owner === this.game.currentPlayer && !ship.isDestroyed) {
-            if (ship.hasMoved) {
-                const badge = document.createElement('span');
-                badge.className = 'ship-card-badge moved';
-                badge.textContent = 'M';
-                status.appendChild(badge);
-            }
-
-            if (ship.hasFired) {
-                const badge = document.createElement('span');
-                badge.className = 'ship-card-badge fired';
-                badge.textContent = 'A';
-                status.appendChild(badge);
-            }
-        }
+        this.renderStatusBadges(status, ship);
 
         // Assemble the card
         card.appendChild(header);
         card.appendChild(health);
-        if (status.children.length > 0) {
-            card.appendChild(status);
-        }
+        card.appendChild(status);
 
         // Add event listeners
         if (!ship.isDestroyed) {
@@ -261,5 +195,54 @@ export class ShipPanel {
 
     setupEventListeners() {
         // The event listeners are added dynamically in createShipCard
+    }
+
+    getOrCreateStatusContainer(card) {
+        let statusContainer = card.querySelector('.ship-card-status');
+        if (!statusContainer) {
+            statusContainer = document.createElement('div');
+            statusContainer.className = 'ship-card-status';
+            card.appendChild(statusContainer);
+        }
+        return statusContainer;
+    }
+
+    renderStatusBadges(statusContainer, ship) {
+        statusContainer.innerHTML = '';
+
+        // Flagship badge
+        if (ship.isFlagship) {
+            const badge = document.createElement('span');
+            badge.className = 'ship-card-badge flagship';
+            badge.textContent = '⭐ FLAG';
+            statusContainer.appendChild(badge);
+        }
+
+        // Captured badge
+        if (ship.isCaptured) {
+            const badge = document.createElement('span');
+            badge.className = 'ship-card-badge captured';
+            badge.textContent = 'CAPTURED';
+            statusContainer.appendChild(badge);
+        }
+
+        // Action badges (only for current player)
+        if (ship.owner === this.game.currentPlayer && !ship.isDestroyed) {
+            if (ship.hasMoved) {
+                const badge = document.createElement('span');
+                badge.className = 'ship-card-badge moved';
+                badge.textContent = 'M';
+                statusContainer.appendChild(badge);
+            }
+
+            if (ship.hasFired) {
+                const badge = document.createElement('span');
+                badge.className = 'ship-card-badge fired';
+                badge.textContent = 'A';
+                statusContainer.appendChild(badge);
+            }
+        }
+
+        statusContainer.style.display = statusContainer.children.length > 0 ? 'flex' : 'none';
     }
 }
