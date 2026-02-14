@@ -297,8 +297,12 @@ export class HUD {
     }
 
     formatBoardingResult(result) {
-        const attackerColor = result.attacker.owner === 'player1' ? 'Red' : 'Blue';
-        const defenderColor = result.defender.owner === 'player1' ? 'Red' : 'Blue';
+        const attackerOwner = result.attacker.owner;
+        const defenderOwnerBefore = result.defenderOwnerBefore || result.defender.owner;
+        const defenderOwnerAfter = result.defenderOwnerAfter || result.defender.owner;
+        const attackerColor = attackerOwner === 'player1' ? 'Red' : 'Blue';
+        const defenderColor = defenderOwnerBefore === 'player1' ? 'Red' : 'Blue';
+        const defenderAfterColor = defenderOwnerAfter === 'player1' ? 'Red' : 'Blue';
         const fallbackReason = result.insufficientLevel
             ? 'attacker-level-too-low'
             : (result.isFlagship ? 'flagship-immune' : undefined);
@@ -331,7 +335,7 @@ export class HUD {
             msg += `⚔️ ${attackerColor} ${result.attacker.name} boards ${defenderColor} ${result.defender.name}\n`;
             if (result.success) {
                 msg += `Result: ✓ CAPTURED (${resultType})\n`;
-                msg += `${defenderColor} ${result.defender.name} now belongs to ${attackerColor}`;
+                msg += `${defenderColor} ${result.defender.name} now belongs to ${defenderAfterColor}`;
             } else {
                 const chanceText = canRoll ? `${finalChance.toFixed(0)}%` : 'N/A';
                 const rollText = canRoll ? resolutionRoll.toFixed(1) : 'N/A';
@@ -340,8 +344,8 @@ export class HUD {
             }
         } else {
             msg += '⚔️ BOARDING REPORT ⚔️\n\n';
-            msg += `Attacker: ${attackerColor} ${result.attacker.name} (${result.attacker.owner})\n`;
-            msg += `Defender: ${defenderColor} ${result.defender.name} (${result.defender.owner})\n\n`;
+            msg += `Attacker: ${attackerColor} ${result.attacker.name} (${attackerOwner})\n`;
+            msg += `Defender: ${defenderColor} ${result.defender.name} (${defenderOwnerBefore})\n\n`;
 
             msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
             msg += 'BOARDING CHANCE CALCULATION\n';
@@ -365,6 +369,7 @@ export class HUD {
 
             if (result.success) {
                 msg += `✓ SUCCESS! ${defenderColor} ${result.defender.name} has been CAPTURED.\n\n`;
+                msg += `Ownership Transfer: ${defenderOwnerBefore} → ${defenderOwnerAfter}\n\n`;
             } else {
                 msg += `✗ BOARDING FAILED.\n\n`;
             }

@@ -28,6 +28,7 @@ export class BoardingSystem {
     static attemptBoarding(attacker, defender) {
         console.log(`${attacker.name} attempts to board ${defender.name}`);
         const computedBreakdown = this.getBoardingChanceBreakdown(attacker, defender);
+        const defenderOwnerBefore = defender.owner;
 
         // Check if attacker's level is high enough to capture the defender
         // Ships can only capture vessels of a lower level
@@ -51,6 +52,8 @@ export class BoardingSystem {
             return {
                 attacker: attacker,
                 defender: defender,
+                defenderOwnerBefore: defenderOwnerBefore,
+                defenderOwnerAfter: defender.owner,
                 boardingChance: 0,
                 roll: 0,
                 success: false,
@@ -103,6 +106,8 @@ export class BoardingSystem {
             return {
                 attacker: attacker,
                 defender: defender,
+                defenderOwnerBefore: defenderOwnerBefore,
+                defenderOwnerAfter: defender.owner,
                 boardingChance: 0, // N/A for flagships
                 roll: 0,
                 success: false,
@@ -134,8 +139,7 @@ export class BoardingSystem {
 
         if (success) {
             // Successful boarding - capture the ship
-            defender.isCaptured = true;
-            defender.owner = attacker.owner;
+            defender.transferOwnership(attacker.owner);
 
             // Captured ships cannot act on the turn they are captured
             defender.remainingMovement = 0;
@@ -162,6 +166,8 @@ export class BoardingSystem {
         return {
             attacker: attacker,
             defender: defender,
+            defenderOwnerBefore: defenderOwnerBefore,
+            defenderOwnerAfter: defender.owner,
             boardingChance: boardingChance,
             roll: roll,
             success: success,

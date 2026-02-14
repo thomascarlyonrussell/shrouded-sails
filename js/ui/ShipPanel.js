@@ -16,37 +16,56 @@ export class ShipPanel {
     }
 
     update() {
-        // Only create cards once, then update their state
-        if (!this.initialized) {
-            this.initializePanel(this.player1Panel, this.game.fleets['player1'], 'player1');
-            this.initializePanel(this.player2Panel, this.game.fleets['player2'], 'player2');
-            this.initialized = true;
+        const player1Ships = this.game.getShipsByOwner('player1', true);
+        const player2Ships = this.game.getShipsByOwner('player2', true);
+
+        if (!this.initialized || this.panelNeedsRebuild(this.player1Panel, player1Ships)) {
+            this.initializePanel(this.player1Panel, 'player1', player1Ships);
         } else {
-            this.updatePanelState(this.player1Panel, this.game.fleets['player1']);
-            this.updatePanelState(this.player2Panel, this.game.fleets['player2']);
+            this.updatePanelState(this.player1Panel, player1Ships);
         }
+
+        if (!this.initialized || this.panelNeedsRebuild(this.player2Panel, player2Ships)) {
+            this.initializePanel(this.player2Panel, 'player2', player2Ships);
+        } else {
+            this.updatePanelState(this.player2Panel, player2Ships);
+        }
+
+        this.initialized = true;
     }
 
-    initializePanel(panelElement, fleet, playerKey) {
-        if (!fleet) return;
+    panelNeedsRebuild(panelElement, ships) {
+        if (!panelElement) return false;
+        const cards = panelElement.querySelectorAll('.ship-card');
+        if (cards.length !== ships.length) return true;
 
-        const ships = fleet.ships;
+        for (let i = 0; i < ships.length; i++) {
+            if (cards[i].dataset.shipId !== ships[i].id) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    initializePanel(panelElement, playerKey, ships = null) {
+        if (!panelElement) return;
+        const panelShips = ships || this.game.getShipsByOwner(playerKey, true);
 
         // Clear existing cards
         panelElement.innerHTML = '';
 
         // Create a card for each ship
-        for (const ship of ships) {
+        for (const ship of panelShips) {
             const card = this.createShipCard(ship, playerKey);
             panelElement.appendChild(card);
         }
     }
 
-    updatePanelState(panelElement, fleet) {
-        if (!fleet) return;
+    updatePanelState(panelElement, ships) {
+        if (!panelElement || !ships) return;
 
         const cards = panelElement.querySelectorAll('.ship-card');
-        const ships = fleet.ships;
 
         for (let i = 0; i < Math.min(cards.length, ships.length); i++) {
             const card = cards[i];
@@ -72,6 +91,7 @@ export class ShipPanel {
 
     applyCardVisibilityState(card, ship, visibilityState) {
         const isVisibleFull = visibilityState === 'VISIBLE_FULL';
+        card.classList.toggle('ship-card--captured', ship.isCaptured);
         card.classList.toggle('is-visible-full', isVisibleFull);
         card.classList.toggle('is-hidden-unknown', visibilityState === 'HIDDEN_UNKNOWN');
         card.classList.toggle('is-hidden-ghost', visibilityState === 'HIDDEN_GHOST');
@@ -112,6 +132,7 @@ export class ShipPanel {
                 healthText.textContent = `HP: ${ship.currentHP}/${ship.maxHP}`;
             }
 
+            card.title = this.getShipTooltipText(ship);
             this.renderStatusBadges(statusContainer, ship);
             return;
         }
@@ -128,6 +149,7 @@ export class ShipPanel {
             healthContainer.style.display = 'none';
         }
 
+        card.title = '';
         this.renderVisibilityBadge(statusContainer, visibilityState);
     }
 
@@ -135,6 +157,7 @@ export class ShipPanel {
         const card = document.createElement('div');
         card.className = `ship-card ${playerKey}`;
         card.dataset.shipId = ship.id;
+        card.classList.toggle('ship-card--captured', ship.isCaptured);
 
         if (ship.isDestroyed) {
             card.classList.add('destroyed');
@@ -205,6 +228,13 @@ export class ShipPanel {
         this.applyCardVisibilityState(card, ship, this.getEnemyVisibilityState(ship));
 
         return card;
+    }
+
+    getShipTooltipText(ship) {
+        if (ship.isCaptured) {
+            return `${ship.name} (Captured from ${ship.originalOwner}, now ${ship.owner})`;
+        }
+        return `${ship.name} (${ship.owner})`;
     }
 
     handleCardHover(ship) {

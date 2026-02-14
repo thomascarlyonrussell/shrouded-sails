@@ -30,6 +30,7 @@ export class Renderer {
         this.drawShips();
         this.drawGhostShips();  // Draw ghost ships after real ships
         this.drawSelection();
+        this.drawSelectedCapturedBadge();
         this.drawHoveredShipHighlight();
         this.drawGrid();
         this.drawCombatEffects();
@@ -553,6 +554,36 @@ export class Renderer {
         this.ctx.lineTo(screenPos.x + this.tileSize - 2, screenPos.y + this.tileSize - 2);
         this.ctx.lineTo(screenPos.x + this.tileSize - 2, screenPos.y + this.tileSize - bracketSize);
         this.ctx.stroke();
+    }
+
+    drawSelectedCapturedBadge() {
+        const ship = this.game.selectedShip;
+        if (!ship || !ship.isCaptured || ship.isDestroyed) return;
+
+        const screenPos = this.gridToScreen(ship.x, ship.y);
+        const badgeX = screenPos.x + this.tileSize / 2;
+        const badgeY = Math.max(14, screenPos.y - 8);
+
+        this.ctx.save();
+        this.ctx.font = 'bold 12px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        const text = 'CAPTURED';
+        const paddingX = 7;
+        const paddingY = 4;
+        const textWidth = this.ctx.measureText(text).width;
+        const boxWidth = textWidth + paddingX * 2;
+        const boxHeight = 12 + paddingY * 2;
+
+        this.ctx.fillStyle = 'rgba(155, 89, 182, 0.92)';
+        this.ctx.strokeStyle = '#f1c40f';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.fillRect(badgeX - boxWidth / 2, badgeY - boxHeight / 2, boxWidth, boxHeight);
+        this.ctx.strokeRect(badgeX - boxWidth / 2, badgeY - boxHeight / 2, boxWidth, boxHeight);
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillText(text, badgeX, badgeY + 0.5);
+        this.ctx.restore();
     }
 
     drawHoveredShipHighlight() {

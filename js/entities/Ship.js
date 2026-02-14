@@ -5,6 +5,7 @@ export class Ship {
         this.id = this.generateId();
         this.type = type;
         this.owner = owner;
+        this.originalOwner = owner;
         this.x = x;
         this.y = y;
 
@@ -67,11 +68,23 @@ export class Ship {
         return !this.isDestroyed && !this.hasFired;
     }
 
+    updateCaptureState() {
+        this.isCaptured = this.owner !== this.originalOwner;
+    }
+
+    transferOwnership(newOwner) {
+        this.owner = newOwner;
+        this.updateCaptureState();
+    }
+
     isDone() {
         return !this.canMove() && !this.canAttack() && !this.canBoard();
     }
 
     getVisionRange() {
+        if (this.isCaptured) {
+            return 1;
+        }
         const stats = SHIP_TYPES[this.type];
         return stats.vision;
     }
@@ -220,6 +233,9 @@ export class Ship {
     getStatusText() {
         const destroyedText = this.isDestroyed ? ' [SUNK]' : '';
         const capturedText = this.isCaptured ? ' [CAPTURED]' : '';
-        return `${this.name} (${this.currentHP}/${this.maxHP} HP, ${this.remainingMovement}/${this.maxMovement} Move, ${this.cannons} Cannons)${destroyedText}${capturedText}`;
+        const captureContextText = this.isCaptured
+            ? ` Captured from ${this.originalOwner}`
+            : '';
+        return `${this.name} (${this.currentHP}/${this.maxHP} HP, ${this.remainingMovement}/${this.maxMovement} Move, ${this.cannons} Cannons)${destroyedText}${capturedText}${captureContextText}`;
     }
 }

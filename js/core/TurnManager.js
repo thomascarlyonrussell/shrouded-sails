@@ -110,8 +110,8 @@ export class TurnManager {
             ? PLAYERS.PLAYER2
             : PLAYERS.PLAYER1;
 
-        // Reset current player's ships
-        this.game.getCurrentFleet().resetAllShips();
+        // Reset ships currently controlled by the active player
+        this.game.resetShipsForOwner(this.game.currentPlayer);
 
         // Deselect ship
         this.game.deselectShip();

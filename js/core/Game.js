@@ -78,6 +78,31 @@ export class Game {
             : this.fleets[PLAYERS.PLAYER1];
     }
 
+    getAllShips() {
+        return this.map ? this.map.ships : [];
+    }
+
+    getShipsByOwner(owner, includeDestroyed = false) {
+        return this.getAllShips().filter(ship => {
+            if (!includeDestroyed && ship.isDestroyed) return false;
+            return ship.owner === owner;
+        });
+    }
+
+    getEnemyShipsFor(owner, includeDestroyed = false) {
+        return this.getAllShips().filter(ship => {
+            if (!includeDestroyed && ship.isDestroyed) return false;
+            return ship.owner !== owner;
+        });
+    }
+
+    resetShipsForOwner(owner) {
+        const ships = this.getShipsByOwner(owner, false);
+        for (const ship of ships) {
+            ship.resetTurn();
+        }
+    }
+
     selectShip(ship) {
         // Can only select own ships that aren't destroyed
         if (ship.owner !== this.currentPlayer || ship.isDestroyed) {
@@ -120,7 +145,7 @@ export class Game {
             return false;
         }
 
-        const enemyShips = this.getEnemyFleet().getActiveShips();
+        const enemyShips = this.getEnemyShipsFor(this.currentPlayer, false);
         this.actionMode = ACTION_MODES.ATTACK;
         this.validTargets = this.selectedShip.getAttackableTargets(
             this.map,
@@ -137,7 +162,7 @@ export class Game {
             return false;
         }
 
-        const enemyShips = this.getEnemyFleet().getActiveShips();
+        const enemyShips = this.getEnemyShipsFor(this.currentPlayer, false);
         this.actionMode = ACTION_MODES.BOARD;
         this.validTargets = this.selectedShip.getBoardableTargets(
             this.map,
@@ -418,20 +443,21 @@ export class Game {
     }
 
     checkWinCondition() {
-        const player1Fleet = this.fleets[PLAYERS.PLAYER1];
-        const player2Fleet = this.fleets[PLAYERS.PLAYER2];
+        const player1ActiveShips = this.getShipsByOwner(PLAYERS.PLAYER1, false);
+        const player2ActiveShips = this.getShipsByOwner(PLAYERS.PLAYER2, false);
 
-        // Check if all ships destroyed
-        if (!player1Fleet.hasShipsRemaining()) {
+        // Check if all ships under a player's control are gone
+        if (player1ActiveShips.length === 0) {
             return PLAYERS.PLAYER2;
         }
-        if (!player2Fleet.hasShipsRemaining()) {
+        if (player2ActiveShips.length === 0) {
             return PLAYERS.PLAYER1;
         }
 
-        // Check if flagship captured
-        const player1Flagship = player1Fleet.getFlagship();
-        const player2Flagship = player2Fleet.getFlagship();
+        // Check if an original flagship is currently captured (controlled by enemy)
+        const allShips = this.getAllShips();
+        const player1Flagship = allShips.find(ship => ship.isFlagship && ship.originalOwner === PLAYERS.PLAYER1 && !ship.isDestroyed);
+        const player2Flagship = allShips.find(ship => ship.isFlagship && ship.originalOwner === PLAYERS.PLAYER2 && !ship.isDestroyed);
 
         if (player1Flagship && player1Flagship.isCaptured) {
             return PLAYERS.PLAYER2;

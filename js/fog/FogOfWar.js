@@ -14,11 +14,7 @@ export class FogOfWar {
 
     calculateVisionCoverage(playerOwner) {
         const visibleTiles = new Set();
-        const fleet = this.game.fleets[playerOwner];
-
-        if (!fleet) return visibleTiles;
-
-        const ships = fleet.ships;
+        const ships = this.game.getShipsByOwner(playerOwner, false);
 
         for (const ship of ships) {
             if (ship.isDestroyed) continue;
@@ -56,10 +52,7 @@ export class FogOfWar {
         }
 
         // Enemy ships - check if within vision range of any friendly ship
-        const friendlyFleet = this.game.fleets[viewingPlayer];
-        if (!friendlyFleet) return false;
-
-        const friendlyShips = friendlyFleet.ships;
+        const friendlyShips = this.game.getShipsByOwner(viewingPlayer, false);
 
         for (const friendlyShip of friendlyShips) {
             if (friendlyShip.isDestroyed) continue;
@@ -85,14 +78,7 @@ export class FogOfWar {
 
     updateLastKnownPositions(viewingPlayer) {
         const playerGhostMap = this.getPlayerGhostMap(viewingPlayer);
-
-        // Get all enemy ships
-        const enemyPlayer = viewingPlayer === 'player1' ? 'player2' : 'player1';
-        const enemyFleet = this.game.fleets[enemyPlayer];
-
-        if (!enemyFleet) return;
-
-        const enemyShips = enemyFleet.ships;
+        const enemyShips = this.game.getEnemyShipsFor(viewingPlayer, false);
 
         for (const enemyShip of enemyShips) {
             if (enemyShip.isDestroyed) {
