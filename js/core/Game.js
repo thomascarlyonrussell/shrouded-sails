@@ -20,12 +20,17 @@ export class Game {
         this.hud = new HUD();
         this.fogOfWar = null;
         this.fogEnabled = true; // Default to enabled
+        this.combatEventHandler = null;
 
         // UI state
         this.selectedShip = null;
         this.actionMode = ACTION_MODES.NONE;
         this.validMovePositions = [];
         this.validTargets = [];
+    }
+
+    setCombatEventHandler(handler) {
+        this.combatEventHandler = handler;
     }
 
     initialize() {
@@ -299,6 +304,12 @@ export class Game {
 
         // Show result
         this.hud.showCombatResult(result);
+        if (this.combatEventHandler) {
+            this.combatEventHandler({
+                type: 'attack',
+                result: result
+            });
+        }
 
         // Exit attack mode
         this.cancelActionMode();
@@ -322,6 +333,12 @@ export class Game {
 
         // Show result
         this.hud.showBoardingResult(result);
+        if (this.combatEventHandler) {
+            this.combatEventHandler({
+                type: 'board',
+                result: result
+            });
+        }
 
         // If ship was captured, it changes ownership
         if (result.success) {

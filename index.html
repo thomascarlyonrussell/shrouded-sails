@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shrouded Sails</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=20260214b">
 </head>
 <body>
     <div class="game-container">
@@ -14,6 +14,14 @@
                 <span id="windInfo">Wind: N (↑) Str: 0</span>
                 <span id="turnInfo">Turn: 1</span>
                 <span id="playerInfo">Player: 1</span>
+                <button id="combatFeedButton" class="combat-feed-button" type="button" aria-expanded="false" aria-controls="combatFeedPanel">
+                    <span id="combatFeedStatusIcon" class="combat-feed-status-icon">🧭</span>
+                    <span class="combat-feed-text">
+                        <span class="combat-feed-title">Combat Feed</span>
+                        <span id="combatFeedStatusText" class="combat-feed-status-text">Quiet seas</span>
+                    </span>
+                    <span id="combatFeedUnread" class="combat-feed-unread hidden">0</span>
+                </button>
             </div>
         </header>
 
@@ -24,9 +32,11 @@
                 <div id="player1Ships" class="ships-list"></div>
             </aside>
 
-            <!-- Game Canvas -->
-            <div class="canvas-container">
-                <canvas id="gameCanvas"></canvas>
+            <div class="battlefield-column">
+                <!-- Game Canvas -->
+                <div class="canvas-container">
+                    <canvas id="gameCanvas"></canvas>
+                </div>
             </div>
 
             <!-- Player 2 Ships Panel (Right) -->
@@ -87,6 +97,17 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js"></script>
+    <div id="combatFeedBackdrop" class="combat-feed-backdrop hidden"></div>
+    <aside id="combatFeedPanel" class="combat-feed-panel hidden" aria-label="Combat Feed">
+        <div class="combat-feed-panel-header">
+            <h3>Combat Feed</h3>
+            <button id="combatFeedClose" class="combat-feed-close" type="button" aria-label="Close combat feed">Close</button>
+        </div>
+        <p class="combat-feed-panel-subtitle">Newest events first. Click an entry to expand details.</p>
+        <div id="combatLogEmpty" class="combat-log-empty">No combat yet. Fire cannons or board an enemy ship to create entries.</div>
+        <div id="combatLogList" class="combat-log-list"></div>
+    </aside>
+
+    <script type="module" src="js/main.js?v=20260214b"></script>
 </body>
 </html>

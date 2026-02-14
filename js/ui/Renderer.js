@@ -7,6 +7,9 @@ export class Renderer {
         this.gameMap = gameMap;
         this.game = game;
         this.tileSize = GRID.TILE_SIZE;
+        this.combatEffects = [];
+        this.shakeUntil = 0;
+        this.shakeIntensity = 0;
 
         // Set canvas size
         this.canvas.width = CANVAS.WIDTH;
@@ -15,7 +18,11 @@ export class Renderer {
 
     render(hoveredShip = null) {
         this.hoveredShip = hoveredShip;
+        const shakeOffset = this.getCurrentShakeOffset();
+
         this.clear();
+        this.ctx.save();
+        this.ctx.translate(shakeOffset.x, shakeOffset.y);
         this.drawMap();
         this.drawFogOverlay();  // Draw fog after terrain but before ships
         this.drawValidMoveHighlights();
@@ -26,11 +33,212 @@ export class Renderer {
         this.drawHoveredShipHighlight();
         this.drawGrid();
         this.drawWindIndicator();
+        this.drawCombatEffects();
+        this.ctx.restore();
     }
 
     clear() {
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
         this.ctx.fillStyle = COLORS.WATER;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    getCurrentShakeOffset() {
+        const now = performance.now();
+        if (now >= this.shakeUntil) {
+            return { x: 0, y: 0 };
+        }
+
+        return {
+            x: (Math.random() - 0.5) * this.shakeIntensity,
+            y: (Math.random() - 0.5) * this.shakeIntensity
+        };
+    }
+
+    triggerScreenShake(durationMs, intensity = 8) {
+        this.shakeUntil = performance.now() + durationMs;
+        this.shakeIntensity = intensity;
+    }
+
+    handleCombatEvent(event) {
+        if (!event || !event.result) return;
+
+        if (event.type === 'attack') {
+            this.enqueueAttackEffects(event.result);
+        } else if (event.type === 'board') {
+            this.enqueueBoardingEffects(event.result);
+        }
+    }
+
+    enqueueAttackEffects(result) {
+        const center = this.gridToCenter(result.defender.x, result.defender.y);
+        const baseDelay = 90;
+
+        result.rolls.forEach((roll, index) => {
+            const delay = index * baseDelay;
+            if (roll.hit) {
+                this.combatEffects.push({
+                    kind: 'hit-burst',
+                    x: center.x,
+                    y: center.y,
+                    duration: 450,
+                    delay: delay,
+                    start: performance.now()
+                });
+            } else {
+                this.combatEffects.push({
+                    kind: 'miss-splash',
+                    x: center.x + (Math.random() - 0.5) * this.tileSize * 0.8,
+                    y: center.y + (Math.random() - 0.5) * this.tileSize * 0.8,
+                    duration: 500,
+                    delay: delay,
+                    start: performance.now()
+                });
+            }
+        });
+
+        if (result.totalDamage > 0) {
+            this.combatEffects.push({
+                kind: 'damage-text',
+                x: center.x,
+                y: center.y - this.tileSize * 0.2,
+                text: `-${result.totalDamage}`,
+                duration: 900,
+                delay: result.rolls.length * baseDelay,
+                start: performance.now()
+            });
+        } else {
+            this.combatEffects.push({
+                kind: 'damage-text',
+                x: center.x,
+                y: center.y - this.tileSize * 0.2,
+                text: 'MISS',
+                duration: 750,
+                delay: result.rolls.length * baseDelay,
+                start: performance.now()
+            });
+        }
+
+        if (result.defenderDestroyed) {
+            this.combatEffects.push({
+                kind: 'sink-blast',
+                x: center.x,
+                y: center.y,
+                duration: 900,
+                delay: result.rolls.length * baseDelay,
+                start: performance.now()
+            });
+        }
+
+        const isCritical = result.totalHits === result.attacker.cannons && result.attacker.cannons >= 2;
+        if (isCritical || result.defenderDestroyed) {
+            this.triggerScreenShake(300, result.defenderDestroyed ? 14 : 9);
+        }
+    }
+
+    enqueueBoardingEffects(result) {
+        const center = this.gridToCenter(result.defender.x, result.defender.y);
+        this.combatEffects.push({
+            kind: 'boarding-clash',
+            x: center.x,
+            y: center.y,
+            duration: 700,
+            delay: 0,
+            start: performance.now()
+        });
+
+        if (result.success) {
+            this.triggerScreenShake(220, 7);
+        }
+    }
+
+    gridToCenter(gridX, gridY) {
+        return {
+            x: gridX * this.tileSize + this.tileSize / 2,
+            y: gridY * this.tileSize + this.tileSize / 2
+        };
+    }
+
+    drawCombatEffects() {
+        const now = performance.now();
+
+        this.combatEffects = this.combatEffects.filter(effect => {
+            const elapsed = now - effect.start - effect.delay;
+            if (elapsed < 0) return true;
+            if (elapsed > effect.duration) return false;
+
+            const progress = elapsed / effect.duration;
+            this.drawEffect(effect, progress);
+            return true;
+        });
+    }
+
+    drawEffect(effect, progress) {
+        if (effect.kind === 'hit-burst') {
+            const radius = 8 + progress * this.tileSize * 0.45;
+            const alpha = 1 - progress;
+            this.ctx.strokeStyle = `rgba(255, 80, 80, ${alpha})`;
+            this.ctx.fillStyle = `rgba(255, 140, 60, ${alpha * 0.45})`;
+            this.ctx.lineWidth = 2.5;
+            this.ctx.beginPath();
+            this.ctx.arc(effect.x, effect.y, radius, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.stroke();
+            return;
+        }
+
+        if (effect.kind === 'miss-splash') {
+            const radius = 4 + progress * this.tileSize * 0.35;
+            const alpha = 0.85 - progress * 0.85;
+            this.ctx.strokeStyle = `rgba(180, 220, 255, ${Math.max(alpha, 0)})`;
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.arc(effect.x, effect.y, radius, 0, Math.PI * 2);
+            this.ctx.stroke();
+            return;
+        }
+
+        if (effect.kind === 'damage-text') {
+            const alpha = 1 - progress;
+            const rise = progress * 26;
+            this.ctx.fillStyle = effect.text === 'MISS'
+                ? `rgba(200, 220, 240, ${alpha})`
+                : `rgba(255, 90, 90, ${alpha})`;
+            this.ctx.strokeStyle = `rgba(0, 0, 0, ${alpha})`;
+            this.ctx.lineWidth = 3;
+            this.ctx.font = 'bold 24px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.strokeText(effect.text, effect.x, effect.y - rise);
+            this.ctx.fillText(effect.text, effect.x, effect.y - rise);
+            return;
+        }
+
+        if (effect.kind === 'sink-blast') {
+            const alpha = 1 - progress;
+            const radius = this.tileSize * (0.2 + progress * 0.9);
+            this.ctx.fillStyle = `rgba(255, 110, 40, ${alpha * 0.45})`;
+            this.ctx.strokeStyle = `rgba(255, 210, 120, ${alpha})`;
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.arc(effect.x, effect.y, radius, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.stroke();
+            return;
+        }
+
+        if (effect.kind === 'boarding-clash') {
+            const alpha = 1 - progress;
+            const size = this.tileSize * (0.3 + progress * 0.5);
+            this.ctx.strokeStyle = `rgba(245, 245, 245, ${alpha})`;
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.moveTo(effect.x - size / 2, effect.y - size / 2);
+            this.ctx.lineTo(effect.x + size / 2, effect.y + size / 2);
+            this.ctx.moveTo(effect.x + size / 2, effect.y - size / 2);
+            this.ctx.lineTo(effect.x - size / 2, effect.y + size / 2);
+            this.ctx.stroke();
+        }
     }
 
     drawMap() {

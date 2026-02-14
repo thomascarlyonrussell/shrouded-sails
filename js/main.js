@@ -31,6 +31,13 @@ class GameApp {
         // Create renderer
         this.renderer = new Renderer(this.canvas, this.game.map, this.game);
         console.log('Renderer initialized');
+        const combatHandler = (event) => this.renderer.handleCombatEvent(event);
+        if (typeof this.game.setCombatEventHandler === 'function') {
+            this.game.setCombatEventHandler(combatHandler);
+        } else {
+            // Fallback for stale module contexts where the setter method is unavailable.
+            this.game.combatEventHandler = combatHandler;
+        }
 
         // Create ship panel
         this.shipPanel = new ShipPanel(this.game, this.renderer);
