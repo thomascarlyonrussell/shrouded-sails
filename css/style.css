@@ -994,6 +994,18 @@ body {
     padding-left: 32px;
 }
 
+.setting-select {
+    width: calc(100% - 32px);
+    margin-top: 12px;
+    margin-left: 32px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(102, 150, 193, 0.55);
+    background: rgba(19, 34, 50, 0.95);
+    color: #ecf0f1;
+    font-size: 14px;
+}
+
 .settings-modal .action-btn {
     width: 100%;
     margin-top: 20px;

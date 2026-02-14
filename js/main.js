@@ -24,6 +24,11 @@ class GameApp {
         // Apply settings if provided
         if (settings) {
             this.game.fogEnabled = settings.fogEnabled;
+            if (this.game.hud && typeof this.game.hud.setCombatDetailLevel === 'function') {
+                this.game.hud.setCombatDetailLevel(settings.combatDetailLevel);
+            }
+        } else if (this.game.hud && typeof this.game.hud.setCombatDetailLevel === 'function') {
+            this.game.hud.setCombatDetailLevel('detailed');
         }
 
         this.game.initialize();

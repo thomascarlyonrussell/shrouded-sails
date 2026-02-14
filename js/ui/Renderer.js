@@ -72,8 +72,9 @@ export class Renderer {
     enqueueAttackEffects(result) {
         const center = this.gridToCenter(result.defender.x, result.defender.y);
         const baseDelay = 90;
+        const rollResults = result.cannonResults || result.rolls || [];
 
-        result.rolls.forEach((roll, index) => {
+        rollResults.forEach((roll, index) => {
             const delay = index * baseDelay;
             if (roll.hit) {
                 this.combatEffects.push({
@@ -103,7 +104,7 @@ export class Renderer {
                 y: center.y - this.tileSize * 0.2,
                 text: `-${result.totalDamage}`,
                 duration: 900,
-                delay: result.rolls.length * baseDelay,
+                delay: rollResults.length * baseDelay,
                 start: performance.now()
             });
         } else {
@@ -113,7 +114,7 @@ export class Renderer {
                 y: center.y - this.tileSize * 0.2,
                 text: 'MISS',
                 duration: 750,
-                delay: result.rolls.length * baseDelay,
+                delay: rollResults.length * baseDelay,
                 start: performance.now()
             });
         }
@@ -124,7 +125,7 @@ export class Renderer {
                 x: center.x,
                 y: center.y,
                 duration: 900,
-                delay: result.rolls.length * baseDelay,
+                delay: rollResults.length * baseDelay,
                 start: performance.now()
             });
         }

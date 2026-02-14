@@ -18,6 +18,7 @@ export class HUD {
             text: 'Quiet seas',
             tone: 'info'
         };
+        this.combatDetailLevel = 'detailed';
 
         this.setupFeedControls();
         this.updateFeedSignal();
@@ -137,6 +138,22 @@ export class HUD {
         }
     }
 
+    setCombatDetailLevel(level) {
+        this.combatDetailLevel = level === 'compact' ? 'compact' : 'detailed';
+    }
+
+    formatSignedPercent(value) {
+        const numeric = Number.isFinite(value) ? value : 0;
+        if (numeric > 0) return `+${numeric.toFixed(0)}%`;
+        if (numeric < 0) return `${numeric.toFixed(0)}%`;
+        return '0%';
+    }
+
+    getCombatAccuracyPercent(totalHits, totalShots) {
+        if (!totalShots) return 0;
+        return (totalHits / totalShots) * 100;
+    }
+
     showCombatResult(result) {
         const entry = this.formatCombatResult(result);
         this.addCombatLogEntry(entry);
@@ -145,24 +162,91 @@ export class HUD {
     formatCombatResult(result) {
         const attackerColor = result.attacker.owner === 'player1' ? 'Red' : 'Blue';
         const defenderColor = result.defender.owner === 'player1' ? 'Red' : 'Blue';
-        const hpPercent = Math.max(0, (result.defender.currentHP / result.defender.maxHP) * 100);
-        const damagePercent = (result.totalDamage / result.defender.maxHP) * 100;
-        const rollSummary = result.rolls
-            .map(roll => `${Math.round(parseFloat(roll.roll))}${roll.hit ? '✓' : '✗'}`)
+        const cannonResults = Array.isArray(result.cannonResults) && result.cannonResults.length > 0
+            ? result.cannonResults
+            : (result.rolls || []).map((roll, index) => ({
+                cannonIndex: roll.cannonIndex || index + 1,
+                roll: Number.parseFloat(roll.roll),
+                threshold: Number.parseFloat(roll.hitChance) || result.hitChance || 0,
+                hit: Boolean(roll.hit),
+                damage: roll.hit ? 1 : 0
+            }));
+
+        const totalCannons = result.attacker.cannons || cannonResults.length;
+        const totalHits = Number.isFinite(result.totalHits) ? result.totalHits : cannonResults.filter(cannon => cannon.hit).length;
+        const totalDamage = Number.isFinite(result.totalDamage) ? result.totalDamage : cannonResults.reduce((sum, cannon) => sum + cannon.damage, 0);
+        const accuracyPercent = Number.isFinite(result.accuracyPercent)
+            ? result.accuracyPercent
+            : this.getCombatAccuracyPercent(totalHits, totalCannons);
+        const baseHitChance = Number.isFinite(result.baseHitChance) ? result.baseHitChance : 70;
+        const fallbackHitChance = Number.parseFloat(result.hitChance);
+        const finalHitChance = Number.isFinite(result.finalHitChance)
+            ? result.finalHitChance
+            : (Number.isFinite(fallbackHitChance) ? fallbackHitChance : 0);
+        const modifiers = result.modifiers || {};
+        const rangeModifier = Number.isFinite(modifiers.rangeModifier) ? modifiers.rangeModifier : 0;
+        const levelModifier = Number.isFinite(modifiers.levelModifier) ? modifiers.levelModifier : 0;
+        const windModifier = Number.isFinite(modifiers.windModifier) ? modifiers.windModifier : 0;
+        const defenderStatus = result.defenderStatus || {
+            currentHP: result.defender.currentHP,
+            maxHP: result.defender.maxHP,
+            hpDelta: totalDamage,
+            hullIntegrityPercent: result.defender.maxHP > 0 ? (result.defender.currentHP / result.defender.maxHP) * 100 : 0,
+            destroyed: Boolean(result.defenderDestroyed)
+        };
+        const outcome = totalHits > 0 ? 'hit' : 'miss';
+
+        const rollSummary = cannonResults
+            .map(cannon => `${Math.round(cannon.roll)}${cannon.hit ? '✓' : '✗'}`)
             .join(', ');
-        const rollDetail = result.rolls
-            .map(roll => `Cannon ${roll.cannonIndex}: ${roll.hit ? 'HIT' : 'MISS'} (${roll.roll})`)
-            .join('\n');
-        const outcome = result.totalHits > 0 ? 'hit' : 'miss';
 
-        let msg = `🔥 ${attackerColor} ${result.attacker.name} fires ${result.attacker.cannons} cannon${result.attacker.cannons === 1 ? '' : 's'} at ${defenderColor} ${result.defender.name}!\n\n`;
-        msg += `Hit Chance: ${result.hitChance.toFixed(0)}% per cannon\n`;
-        msg += `Roll Results: [${rollSummary}]\n`;
-        msg += `${rollDetail}\n\n`;
-        msg += `→ ${result.totalHits} hit${result.totalHits === 1 ? '' : 's'}! ${result.totalDamage} damage dealt\n`;
-        msg += `→ ${defenderColor} ${result.defender.name}: ${result.defender.currentHP}/${result.defender.maxHP} HP remaining (-${damagePercent.toFixed(0)}%)`;
+        let msg = '';
+        if (this.combatDetailLevel === 'compact') {
+            msg += `🔥 ${attackerColor} ${result.attacker.name} fires at ${defenderColor} ${result.defender.name}\n`;
+            msg += `Chance: ${finalHitChance.toFixed(0)}% | Hits: ${totalHits}/${totalCannons} (${accuracyPercent.toFixed(0)}%) | Damage: ${totalDamage}\n`;
+            msg += `Rolls: [${rollSummary}]\n`;
+            msg += `${defenderColor} ${result.defender.name}: ${defenderStatus.currentHP}/${defenderStatus.maxHP} HP (${defenderStatus.hullIntegrityPercent.toFixed(0)}% hull)`;
+        } else {
+            const cannonLines = cannonResults.map(cannon => {
+                const rollValue = Number.isFinite(cannon.roll) ? cannon.roll.toFixed(1) : cannon.roll;
+                const threshold = Number.isFinite(cannon.threshold) ? cannon.threshold.toFixed(0) : finalHitChance.toFixed(0);
+                if (cannon.hit) {
+                    return `Cannon ${cannon.cannonIndex}: Roll ${rollValue} vs ${threshold} -> ✓ HIT! (${cannon.damage} damage)`;
+                }
+                return `Cannon ${cannon.cannonIndex}: Roll ${rollValue} vs ${threshold} -> ✗ MISS`;
+            }).join('\n');
 
-        if (result.defenderDestroyed) {
+            msg += '🔥 COMBAT REPORT 🔥\n\n';
+            msg += `Attacker: ${attackerColor} ${result.attacker.name} (${result.attacker.owner})\n`;
+            msg += `Defender: ${defenderColor} ${result.defender.name} (${result.defender.owner})\n`;
+            msg += `Range: ${result.distance} tile${result.distance === 1 ? '' : 's'}\n\n`;
+
+            msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            msg += 'HIT CHANCE CALCULATION\n';
+            msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            msg += `Base Chance: ${baseHitChance.toFixed(0)}%\n`;
+            msg += `Range Modifier: ${this.formatSignedPercent(rangeModifier)}\n`;
+            msg += `Level Modifier: ${this.formatSignedPercent(levelModifier)}\n`;
+            msg += `Wind Modifier: ${this.formatSignedPercent(windModifier)}\n`;
+            msg += `Final Hit Chance: ${finalHitChance.toFixed(0)}% per cannon\n\n`;
+
+            msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            msg += `CANNONS FIRED: ${totalCannons}\n`;
+            msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            msg += `${cannonLines}\n\n`;
+
+            msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            msg += 'RESULTS\n';
+            msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            msg += `Total Hits: ${totalHits}/${totalCannons} (${accuracyPercent.toFixed(0)}% accuracy)\n`;
+            msg += `Total Damage: ${totalDamage} HP\n\n`;
+            msg += `${defenderColor} ${result.defender.name} Status:\n`;
+            msg += `├─ HP: ${defenderStatus.currentHP}/${defenderStatus.maxHP} (${defenderStatus.hpDelta} damage taken)\n`;
+            msg += `├─ Status: ${defenderStatus.destroyed ? 'Sunk' : 'Still operational'}\n`;
+            msg += `└─ Hull Integrity: ${defenderStatus.hullIntegrityPercent.toFixed(0)}%`;
+        }
+
+        if (defenderStatus.destroyed) {
             msg += '\n\n💥 SHIP SUNK! 💥';
         }
 
@@ -171,29 +255,37 @@ export class HUD {
             text: 'Broadside missed',
             tone: 'warn'
         };
-        if (result.defenderDestroyed) {
+        if (defenderStatus.destroyed) {
             signal = {
                 icon: '💥',
                 text: 'Enemy ship sunk',
                 tone: 'danger'
             };
-        } else if (result.totalHits > 0) {
+        } else if (totalHits > 0) {
             signal = {
                 icon: '🎯',
-                text: `${result.totalHits} hit${result.totalHits === 1 ? '' : 's'} for ${result.totalDamage} damage`,
+                text: `${totalHits} hit${totalHits === 1 ? '' : 's'} for ${totalDamage} damage`,
                 tone: 'good'
             };
         }
 
+        const detailLines = this.combatDetailLevel === 'compact'
+            ? [
+                `Chance ${finalHitChance.toFixed(0)}% | Rolls [${rollSummary}]`,
+                `Damage ${totalDamage} | ${defenderColor} ${result.defender.name} ${defenderStatus.currentHP}/${defenderStatus.maxHP} HP`
+            ]
+            : [
+                `Base ${baseHitChance.toFixed(0)}% | Range ${this.formatSignedPercent(rangeModifier)} | Level ${this.formatSignedPercent(levelModifier)} | Wind ${this.formatSignedPercent(windModifier)}`,
+                `Hits ${totalHits}/${totalCannons} (${accuracyPercent.toFixed(0)}%) | Rolls [${rollSummary}]`,
+                `Damage ${totalDamage} | ${defenderColor} ${result.defender.name} ${defenderStatus.currentHP}/${defenderStatus.maxHP} HP (${defenderStatus.hullIntegrityPercent.toFixed(0)}% hull)`
+            ];
+
         return {
             type: 'attack',
             attackerOwner: result.attacker.owner,
-            outcome: result.defenderDestroyed ? 'destroyed' : outcome,
-            summary: `${attackerColor} ${result.attacker.name} -> ${defenderColor} ${result.defender.name}: ${result.totalHits}/${result.attacker.cannons} hits, ${result.totalDamage} damage`,
-            details: [
-                `Chance ${result.hitChance.toFixed(0)}% | Rolls [${rollSummary}]`,
-                `Damage ${result.totalDamage} | ${defenderColor} ${result.defender.name} ${result.defender.currentHP}/${result.defender.maxHP} HP (${hpPercent.toFixed(0)}%)`
-            ],
+            outcome: defenderStatus.destroyed ? 'destroyed' : outcome,
+            summary: `${attackerColor} ${result.attacker.name} -> ${defenderColor} ${result.defender.name}: ${totalHits}/${totalCannons} hits, ${totalDamage} damage`,
+            details: detailLines,
             signal: signal,
             message: msg
         };
@@ -207,91 +299,128 @@ export class HUD {
     formatBoardingResult(result) {
         const attackerColor = result.attacker.owner === 'player1' ? 'Red' : 'Blue';
         const defenderColor = result.defender.owner === 'player1' ? 'Red' : 'Blue';
+        const fallbackReason = result.insufficientLevel
+            ? 'attacker-level-too-low'
+            : (result.isFlagship ? 'flagship-immune' : undefined);
+        const chanceBreakdown = result.chanceBreakdown || {
+            baseChance: 40,
+            levelModifier: result.attacker.type * 10,
+            hpRatioModifier: 0,
+            finalChance: result.boardingChance || 0,
+            reason: fallbackReason
+        };
+        const baseChance = Number.isFinite(chanceBreakdown.baseChance) ? chanceBreakdown.baseChance : 0;
+        const levelModifier = Number.isFinite(chanceBreakdown.levelModifier) ? chanceBreakdown.levelModifier : 0;
+        const hpRatioModifier = Number.isFinite(chanceBreakdown.hpRatioModifier) ? chanceBreakdown.hpRatioModifier : 0;
+        const finalChance = Number.isFinite(chanceBreakdown.finalChance) ? chanceBreakdown.finalChance : 0;
+        const resultType = result.resolution?.resultType
+            || (result.success ? 'captured' : (result.insufficientLevel ? 'repelled-insufficient-level' : (result.isFlagship ? 'flagship-immune' : 'failed')));
+        const resolution = result.resolution || {
+            roll: result.roll || 0,
+            success: result.success,
+            attackerDamage: result.success ? 0 : (result.isFlagship ? 2 : 1),
+            defenderDamage: result.success ? 0 : (result.isFlagship ? 2 : 1),
+            resultType: resultType
+        };
+        const numericRoll = Number.isFinite(resolution.roll) ? resolution.roll : Number.parseFloat(resolution.roll);
+        const resolutionRoll = Number.isFinite(numericRoll) ? numericRoll : 0;
+        const canRoll = !chanceBreakdown.reason;
 
-        let msg = `${attackerColor} ${result.attacker.name} attempts to board ${defenderColor} ${result.defender.name}!\n\n`;
-
-        // Check if attacker's level is too low
-        if (result.insufficientLevel) {
-            msg += `⚠️ INSUFFICIENT LEVEL!\n\n`;
-            msg += `${attackerColor} ${result.attacker.name} (Lvl ${result.attacker.type}) cannot capture ships of equal or higher level!\n`;
-            msg += `${defenderColor} ${result.defender.name} (Lvl ${result.defender.type}) repels the boarding party!\n\n`;
-            msg += `Both ships take 1 damage in the skirmish.\n\n`;
-            msg += `${attackerColor} ${result.attacker.name}: ${result.attacker.currentHP}/${result.attacker.maxHP} HP\n`;
-            msg += `${defenderColor} ${result.defender.name}: ${result.defender.currentHP}/${result.defender.maxHP} HP`;
-            return {
-                type: 'board',
-                attackerOwner: result.attacker.owner,
-                outcome: 'failed',
-                summary: `${attackerColor} ${result.attacker.name} failed boarding due to insufficient level`,
-                details: [
-                    `${attackerColor} ${result.attacker.name} ${result.attacker.currentHP}/${result.attacker.maxHP} HP | ${defenderColor} ${result.defender.name} ${result.defender.currentHP}/${result.defender.maxHP} HP`
-                ],
-                signal: {
-                    icon: '🛡️',
-                    text: 'Boarding repelled',
-                    tone: 'warn'
-                },
-                message: msg
-            };
-        }
-
-        // Check if target is a flagship
-        if (result.isFlagship) {
-            msg += `⚠️ FLAGSHIP CANNOT BE CAPTURED!\n\n`;
-            msg += `The flagship's crew fights fiercely!\n`;
-            msg += `Both ships take 2 damage in the brutal melee.\n\n`;
-            msg += `${attackerColor} ${result.attacker.name}: ${result.attacker.currentHP}/${result.attacker.maxHP} HP\n`;
-            msg += `${defenderColor} ${result.defender.name}: ${result.defender.currentHP}/${result.defender.maxHP} HP`;
-            return {
-                type: 'board',
-                attackerOwner: result.attacker.owner,
-                outcome: 'failed',
-                summary: `${attackerColor} ${result.attacker.name} failed boarding: flagship immunity`,
-                details: [
-                    `${attackerColor} ${result.attacker.name} ${result.attacker.currentHP}/${result.attacker.maxHP} HP | ${defenderColor} ${result.defender.name} ${result.defender.currentHP}/${result.defender.maxHP} HP`
-                ],
-                signal: {
-                    icon: '👑',
-                    text: 'Flagship resisted boarding',
-                    tone: 'warn'
-                },
-                message: msg
-            };
-        }
-
-        msg += `Boarding Chance: ${result.boardingChance.toFixed(0)}%\n`;
-        msg += `Roll: ${result.roll.toFixed(1)}\n\n`;
-
-        if (result.success) {
-            msg += `✓ SUCCESS! ${defenderColor} ${result.defender.name} has been CAPTURED!\n`;
-            msg += `It now belongs to ${attackerColor}!`;
+        let msg = '';
+        if (this.combatDetailLevel === 'compact') {
+            msg += `⚔️ ${attackerColor} ${result.attacker.name} boards ${defenderColor} ${result.defender.name}\n`;
+            if (result.success) {
+                msg += `Result: ✓ CAPTURED (${resultType})\n`;
+                msg += `${defenderColor} ${result.defender.name} now belongs to ${attackerColor}`;
+            } else {
+                const chanceText = canRoll ? `${finalChance.toFixed(0)}%` : 'N/A';
+                const rollText = canRoll ? resolutionRoll.toFixed(1) : 'N/A';
+                msg += `Chance: ${chanceText} | Roll: ${rollText} | Result: ✗ FAILED (${resultType})\n`;
+                msg += `${attackerColor} ${result.attacker.name}: ${result.attacker.currentHP}/${result.attacker.maxHP} HP | ${defenderColor} ${result.defender.name}: ${result.defender.currentHP}/${result.defender.maxHP} HP`;
+            }
         } else {
-            msg += `✗ FAILED! Both ships take 1 damage.\n`;
+            msg += '⚔️ BOARDING REPORT ⚔️\n\n';
+            msg += `Attacker: ${attackerColor} ${result.attacker.name} (${result.attacker.owner})\n`;
+            msg += `Defender: ${defenderColor} ${result.defender.name} (${result.defender.owner})\n\n`;
+
+            msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            msg += 'BOARDING CHANCE CALCULATION\n';
+            msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            msg += `Base Chance: ${baseChance.toFixed(0)}%\n`;
+            msg += `Level Modifier: ${this.formatSignedPercent(levelModifier)}\n`;
+            msg += `HP Ratio Modifier: ${this.formatSignedPercent(hpRatioModifier)}\n`;
+            if (chanceBreakdown.reason) {
+                msg += `Final Boarding Chance: N/A (${chanceBreakdown.reason})\n\n`;
+            } else {
+                msg += `Final Boarding Chance: ${finalChance.toFixed(0)}%\n\n`;
+            }
+
+            msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            msg += 'RESOLUTION\n';
+            msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+            msg += `Result Type: ${resultType}\n`;
+            msg += `Roll: ${canRoll ? resolutionRoll.toFixed(1) : 'N/A'}\n`;
+            msg += `Attacker Damage: ${resolution.attackerDamage}\n`;
+            msg += `Defender Damage: ${resolution.defenderDamage}\n\n`;
+
+            if (result.success) {
+                msg += `✓ SUCCESS! ${defenderColor} ${result.defender.name} has been CAPTURED.\n\n`;
+            } else {
+                msg += `✗ BOARDING FAILED.\n\n`;
+            }
+
             msg += `${attackerColor} ${result.attacker.name}: ${result.attacker.currentHP}/${result.attacker.maxHP} HP\n`;
             msg += `${defenderColor} ${result.defender.name}: ${result.defender.currentHP}/${result.defender.maxHP} HP`;
+        }
+
+        let summary = `${attackerColor} ${result.attacker.name} boarding ${result.success ? 'succeeded' : 'failed'} vs ${defenderColor} ${result.defender.name}`;
+        if (resultType === 'repelled-insufficient-level') {
+            summary = `${attackerColor} ${result.attacker.name} failed boarding due to insufficient level`;
+        } else if (resultType === 'flagship-immune') {
+            summary = `${attackerColor} ${result.attacker.name} failed boarding: flagship immunity`;
+        }
+
+        const details = result.success
+            ? [`Result ${resultType} | Target captured by ${attackerColor}`]
+            : [
+                `Chance ${canRoll ? finalChance.toFixed(0) : 'N/A'} | Roll ${canRoll ? resolutionRoll.toFixed(1) : 'N/A'} | Type ${resultType}`,
+                `Damage A:${resolution.attackerDamage} D:${resolution.defenderDamage} | ${attackerColor} ${result.attacker.name} ${result.attacker.currentHP}/${result.attacker.maxHP} HP | ${defenderColor} ${result.defender.name} ${result.defender.currentHP}/${result.defender.maxHP} HP`
+            ];
+
+        let signal;
+        if (result.success) {
+            signal = {
+                icon: '🏴‍☠️',
+                text: 'Boarding succeeded',
+                tone: 'good'
+            };
+        } else if (resultType === 'repelled-insufficient-level') {
+            signal = {
+                icon: '🛡️',
+                text: 'Boarding repelled',
+                tone: 'warn'
+            };
+        } else if (resultType === 'flagship-immune') {
+            signal = {
+                icon: '👑',
+                text: 'Flagship resisted boarding',
+                tone: 'warn'
+            };
+        } else {
+            signal = {
+                icon: '⚔️',
+                text: 'Boarding failed',
+                tone: 'warn'
+            };
         }
 
         return {
             type: 'board',
             attackerOwner: result.attacker.owner,
             outcome: result.success ? 'success' : 'failed',
-            summary: `${attackerColor} ${result.attacker.name} boarding ${result.success ? 'succeeded' : 'failed'} vs ${defenderColor} ${result.defender.name}`,
-            details: result.success
-                ? [`Target captured by ${attackerColor}`]
-                : [
-                    `${attackerColor} ${result.attacker.name} ${result.attacker.currentHP}/${result.attacker.maxHP} HP | ${defenderColor} ${result.defender.name} ${result.defender.currentHP}/${result.defender.maxHP} HP`
-                ],
-            signal: result.success
-                ? {
-                    icon: '🏴‍☠️',
-                    text: 'Boarding succeeded',
-                    tone: 'good'
-                }
-                : {
-                    icon: '⚔️',
-                    text: 'Boarding failed',
-                    tone: 'warn'
-                },
+            summary: summary,
+            details: details,
+            signal: signal,
             message: msg
         };
     }
