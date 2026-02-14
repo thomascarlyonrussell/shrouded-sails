@@ -90,6 +90,10 @@ export class Game {
 
     deselectShip() {
         this.selectedShip = null;
+        this.cancelActionMode();
+    }
+
+    cancelActionMode() {
         this.actionMode = ACTION_MODES.NONE;
         this.validMovePositions = [];
         this.validTargets = [];
@@ -251,8 +255,7 @@ export class Game {
                 // Move successful
             } else {
                 // Invalid move, cancel
-                this.actionMode = ACTION_MODES.NONE;
-                this.validMovePositions = [];
+                this.cancelActionMode();
             }
         } else if (this.actionMode === ACTION_MODES.ATTACK) {
             // Attack mode - check if clicking on valid target
@@ -260,8 +263,7 @@ export class Game {
                 this.attackShip(clickedShip);
             } else {
                 // Cancel attack mode
-                this.actionMode = ACTION_MODES.NONE;
-                this.validTargets = [];
+                this.cancelActionMode();
             }
         } else if (this.actionMode === ACTION_MODES.BOARD) {
             // Board mode - check if clicking on valid target
@@ -269,8 +271,7 @@ export class Game {
                 this.boardShip(clickedShip);
             } else {
                 // Cancel board mode
-                this.actionMode = ACTION_MODES.NONE;
-                this.validTargets = [];
+                this.cancelActionMode();
             }
         }
     }
@@ -300,8 +301,7 @@ export class Game {
         this.hud.showCombatResult(result);
 
         // Exit attack mode
-        this.actionMode = ACTION_MODES.NONE;
-        this.validTargets = [];
+        this.cancelActionMode();
 
         return true;
     }
@@ -330,8 +330,7 @@ export class Game {
         }
 
         // Exit board mode
-        this.actionMode = ACTION_MODES.NONE;
-        this.validTargets = [];
+        this.cancelActionMode();
 
         return true;
     }

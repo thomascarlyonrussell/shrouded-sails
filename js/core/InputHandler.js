@@ -1,4 +1,5 @@
 import { ActionMenu } from '../ui/ActionMenu.js';
+import { ACTION_MODES } from '../utils/Constants.js';
 
 export class InputHandler {
     constructor(canvas, game, renderer) {
@@ -20,14 +21,17 @@ export class InputHandler {
         // Action buttons
         document.getElementById('moveBtn').addEventListener('click', () => {
             this.game.enterMoveMode();
+            this.updateUI();
         });
 
         document.getElementById('fireBtn').addEventListener('click', () => {
             this.game.enterAttackMode();
+            this.updateUI();
         });
 
         document.getElementById('boardBtn').addEventListener('click', () => {
             this.game.enterBoardMode();
+            this.updateUI();
         });
 
         document.getElementById('endTurnBtn').addEventListener('click', () => {
@@ -72,7 +76,8 @@ export class InputHandler {
     handleKeyPress(event) {
         switch (event.key) {
             case 'Escape':
-                this.game.deselectShip();
+                // Escape should only cancel the current action mode, never consume or clear ship selection.
+                this.game.cancelActionMode();
                 this.updateUI();
                 break;
             case 'm':
