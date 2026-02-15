@@ -46,13 +46,15 @@ body.startup-overlay-active .game-container {
 }
 
 .game-title {
+    font-family: 'Cinzel', Georgia, serif;
     font-size: 28px;
     font-weight: 700;
     text-align: center;
     margin: 0 0 10px 0;
     color: #ecf0f1;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    letter-spacing: 2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5),
+                 0 0 12px rgba(52, 152, 219, 0.3);
+    letter-spacing: 3px;
 }
 
 .header-info {
@@ -346,9 +348,10 @@ body.startup-overlay-active .game-container {
 }
 
 .combat-feed-panel-header h3 {
+    font-family: 'Cinzel', Georgia, serif;
     margin: 0;
     font-size: 20px;
-    letter-spacing: 0.4px;
+    letter-spacing: 1.5px;
 }
 
 .combat-feed-close {
@@ -557,9 +560,10 @@ body.startup-overlay-active .game-container {
 }
 
 .in-game-settings-panel-header h3 {
+    font-family: 'Cinzel', Georgia, serif;
     margin: 0;
     font-size: 20px;
-    letter-spacing: 0.4px;
+    letter-spacing: 1.5px;
 }
 
 .in-game-settings-close {
@@ -685,7 +689,11 @@ body.startup-overlay-active .game-container {
 }
 
 .ships-panel h3 {
-    font-size: 18px;
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
     margin-bottom: 15px;
     padding-bottom: 10px;
     border-bottom: 2px solid #2c5f8d;
@@ -960,8 +968,11 @@ body.startup-overlay-active .game-container {
 }
 
 .modal-content h2 {
+    font-family: 'Cinzel', Georgia, serif;
     color: #ecf0f1;
     font-size: 36px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
     margin-bottom: 20px;
     text-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
 }
@@ -1321,6 +1332,7 @@ body.startup-overlay-active .game-container {
 
 .settings-modal h2 {
     font-size: 30px;
+    letter-spacing: 2px;
     margin-bottom: 12px;
 }
 
@@ -1495,9 +1507,11 @@ body.startup-overlay-active .game-container {
 }
 
 .tutorial-title {
+    font-family: 'Cinzel', Georgia, serif;
     margin: 0 0 8px;
     color: #ecf0f1;
     font-size: 20px;
+    letter-spacing: 1px;
     line-height: 1.2;
 }
 
@@ -1538,10 +1552,33 @@ body.startup-overlay-active .game-container {
     box-shadow: 0 0 0 2px rgba(16, 23, 34, 0.8), 0 0 24px rgba(255, 208, 84, 0.45);
 }
 
+/* Game Over Modal Styles */
+#gameOverModal .modal-content {
+    background: linear-gradient(135deg, rgba(30, 40, 54, 0.85) 0%, rgba(15, 20, 25, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    border-color: rgba(44, 95, 141, 0.6);
+    box-shadow: 0 0 40px rgba(52, 152, 219, 0.3);
+}
+
+#gameOverModal .modal-content h2 {
+    font-size: 44px;
+    color: transparent;
+    background: linear-gradient(180deg, #ffffff 0%, #c2d8ec 50%, #7fa8c9 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.7))
+            drop-shadow(0 0 20px rgba(52, 152, 219, 0.25));
+}
+
 /* Turn Transition Modal Styles */
 .turn-transition {
     max-width: 500px;
     text-align: center;
+    background: linear-gradient(135deg, rgba(30, 40, 54, 0.85) 0%, rgba(15, 20, 25, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    border-color: rgba(44, 95, 141, 0.6);
+    box-shadow: 0 0 40px rgba(52, 152, 219, 0.3);
 }
 
 .turn-transition h2 {
@@ -1553,6 +1590,27 @@ body.startup-overlay-active .game-container {
     font-size: 18px;
     color: #95a5a6;
     margin-bottom: 35px;
+}
+
+/* Shared modal decorative divider */
+.modal-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 0 0 20px;
+}
+
+.modal-divider-line {
+    display: block;
+    width: 48px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(160, 195, 230, 0.45), transparent);
+}
+
+.modal-divider-diamond {
+    font-size: 9px;
+    color: rgba(160, 195, 230, 0.45);
 }
 
 .action-btn.large {
