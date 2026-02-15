@@ -15,6 +15,7 @@ export class Renderer {
         this.fogCacheCanvas = null;
         this.fogCacheCtx = null;
         this.fogCacheKey = null;
+        this.cameraTransition = null;
 
         this.canvas.width = this.gameMap.width * this.tileSize;
         this.canvas.height = this.gameMap.height * this.tileSize;
@@ -22,6 +23,7 @@ export class Renderer {
 
     render(hoveredShip = null) {
         this.hoveredShip = hoveredShip;
+        this.updateCameraTransition();
         const shakeOffset = this.getCurrentShakeOffset();
 
         this.clear();
@@ -39,6 +41,139 @@ export class Renderer {
         this.drawGrid();
         this.drawCombatEffects();
         this.ctx.restore();
+    }
+
+    startAutoFrameForOwner(owner, options = {}) {
+        if (!owner || this.camera.zoom <= 1) {
+            return false;
+        }
+
+        const bounds = this.getFleetBoundsForOwner(owner);
+        if (!bounds) {
+            return false;
+        }
+
+        const target = this.calculateCameraTargetForBounds(bounds, options.paddingPx);
+        if (!target) {
+            return false;
+        }
+
+        const durationMs = Number.isFinite(options.durationMs)
+            ? Math.max(120, options.durationMs)
+            : 650;
+
+        const deltaZoom = Math.abs(target.zoom - this.camera.zoom);
+        const deltaX = Math.abs(target.offsetX - this.camera.offsetX);
+        const deltaY = Math.abs(target.offsetY - this.camera.offsetY);
+        if (deltaZoom < 0.01 && deltaX < 1 && deltaY < 1) {
+            return false;
+        }
+
+        this.cameraTransition = {
+            startedAt: performance.now(),
+            durationMs,
+            fromZoom: this.camera.zoom,
+            fromOffsetX: this.camera.offsetX,
+            fromOffsetY: this.camera.offsetY,
+            toZoom: target.zoom,
+            toOffsetX: target.offsetX,
+            toOffsetY: target.offsetY
+        };
+
+        return true;
+    }
+
+    cancelCameraTransition() {
+        this.cameraTransition = null;
+    }
+
+    updateCameraTransition(now = performance.now()) {
+        if (!this.cameraTransition) return;
+
+        const transition = this.cameraTransition;
+        const elapsed = now - transition.startedAt;
+        const progress = Math.max(0, Math.min(1, elapsed / transition.durationMs));
+        const eased = this.easeInOutCubic(progress);
+
+        this.camera.zoom = this.lerp(transition.fromZoom, transition.toZoom, eased);
+        this.camera.offsetX = this.lerp(transition.fromOffsetX, transition.toOffsetX, eased);
+        this.camera.offsetY = this.lerp(transition.fromOffsetY, transition.toOffsetY, eased);
+        this.camera.clampToBounds(
+            this.canvas.width,
+            this.canvas.height,
+            this.gameMap.width * this.tileSize,
+            this.gameMap.height * this.tileSize
+        );
+
+        if (progress >= 1) {
+            this.cameraTransition = null;
+        }
+    }
+
+    easeInOutCubic(value) {
+        if (value < 0.5) {
+            return 4 * value * value * value;
+        }
+        return 1 - Math.pow(-2 * value + 2, 3) / 2;
+    }
+
+    lerp(from, to, t) {
+        return from + (to - from) * t;
+    }
+
+    getFleetBoundsForOwner(owner) {
+        const ships = this.game.getShipsByOwner(owner, false);
+        if (!ships || ships.length === 0) {
+            return null;
+        }
+
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+
+        for (const ship of ships) {
+            const bounds = this.getShipBounds(ship);
+            minX = Math.min(minX, bounds.x);
+            minY = Math.min(minY, bounds.y);
+            maxX = Math.max(maxX, bounds.x + bounds.width);
+            maxY = Math.max(maxY, bounds.y + bounds.height);
+        }
+
+        return {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY
+        };
+    }
+
+    calculateCameraTargetForBounds(bounds, paddingPx = this.tileSize * 1.5) {
+        if (!bounds) return null;
+
+        const paddedWidth = Math.max(1, bounds.width + paddingPx * 2);
+        const paddedHeight = Math.max(1, bounds.height + paddingPx * 2);
+        const fitZoom = Math.min(this.canvas.width / paddedWidth, this.canvas.height / paddedHeight);
+        const targetZoom = Math.max(this.camera.minZoom, Math.min(this.camera.maxZoom, fitZoom));
+
+        const centerX = bounds.x + bounds.width / 2;
+        const centerY = bounds.y + bounds.height / 2;
+        let targetOffsetX = this.canvas.width / 2 - centerX * targetZoom;
+        let targetOffsetY = this.canvas.height / 2 - centerY * targetZoom;
+
+        const boardWidthPx = this.gameMap.width * this.tileSize;
+        const boardHeightPx = this.gameMap.height * this.tileSize;
+        const minOffsetX = Math.min(0, this.canvas.width - boardWidthPx * targetZoom);
+        const minOffsetY = Math.min(0, this.canvas.height - boardHeightPx * targetZoom);
+
+        targetOffsetX = Math.max(minOffsetX, Math.min(0, targetOffsetX));
+        targetOffsetY = Math.max(minOffsetY, Math.min(0, targetOffsetY));
+
+        return {
+            zoom: targetZoom,
+            offsetX: targetOffsetX,
+            offsetY: targetOffsetY
+        };
     }
 
     clear() {

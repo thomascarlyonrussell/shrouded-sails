@@ -86,6 +86,7 @@ export class InputHandler {
     handleTouchStart(event) {
         event.preventDefault();
         if (event.touches.length === 2) {
+            this.renderer.cancelCameraTransition();
             const [a, b] = event.touches;
             this.touchState.pinchDistance = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
             return;
@@ -105,6 +106,7 @@ export class InputHandler {
     handleTouchMove(event) {
         event.preventDefault();
         if (event.touches.length === 2) {
+            this.renderer.cancelCameraTransition();
             const [a, b] = event.touches;
             const dist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
             if (this.touchState.pinchDistance) {
@@ -128,6 +130,7 @@ export class InputHandler {
         if (Math.hypot(totalDx, totalDy) > 10) {
             this.touchState.panning = true;
             if (this.renderer.camera.zoom > 1) {
+                this.renderer.cancelCameraTransition();
                 this.renderer.camera.pan(dx, dy);
                 this.renderer.camera.clampToBounds(this.canvas.width, this.canvas.height, this.game.map.width * this.renderer.tileSize, this.game.map.height * this.renderer.tileSize);
             }

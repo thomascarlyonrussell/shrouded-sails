@@ -87,6 +87,10 @@ class GameApp {
         // Create renderer
         this.renderer = new Renderer(this.canvas, this.game.map, this.game);
         console.log('Renderer initialized');
+        this.game.setEndTurnTransitionHandler(({ nextPlayer }) => {
+            if (!this.renderer || this.renderer.camera.zoom <= 1) return;
+            this.renderer.startAutoFrameForOwner(nextPlayer);
+        });
         const combatHandler = (event) => this.renderer.handleCombatEvent(event);
         if (typeof this.game.setCombatEventHandler === 'function') {
             this.game.setCombatEventHandler(combatHandler);

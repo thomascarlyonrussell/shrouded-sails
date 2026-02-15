@@ -73,6 +73,13 @@ export class TurnManager {
             return;
         }
 
+        const nextPlayer = this.game.currentPlayer === PLAYERS.PLAYER1
+            ? PLAYERS.PLAYER2
+            : PLAYERS.PLAYER1;
+
+        // Trigger any end-turn transition behavior (e.g., camera reframing)
+        this.game.notifyEndTurnTransition(nextPlayer);
+
         // If fog of war is enabled, show turn transition screen
         if (this.game.fogOfWar) {
             this.showTurnTransition();

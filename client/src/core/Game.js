@@ -23,6 +23,7 @@ export class Game {
         this.fogEnabled = true; // Default to enabled
         this.combatEventHandler = null;
         this.audioManager = null;
+        this.endTurnTransitionHandler = null;
 
         // UI state
         this.selectedShip = null;
@@ -40,6 +41,20 @@ export class Game {
         if (this.hud && typeof this.hud.setAudioManager === 'function') {
             this.hud.setAudioManager(audioManager);
         }
+    }
+
+    setEndTurnTransitionHandler(handler) {
+        this.endTurnTransitionHandler = handler;
+    }
+
+    notifyEndTurnTransition(nextPlayer) {
+        if (typeof this.endTurnTransitionHandler !== 'function') return;
+
+        this.endTurnTransitionHandler({
+            currentPlayer: this.currentPlayer,
+            nextPlayer,
+            turnNumber: this.turnNumber
+        });
     }
 
     initialize() {
