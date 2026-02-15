@@ -142,72 +142,108 @@
     >
         <div class="modal-content settings-modal">
             <h2 id="settingsTitle">Game Settings</h2>
-            <div class="settings-section">
-                <div class="setting-item">
-                    <label for="fogOfWarCheckbox" class="setting-label">
-                        <input type="checkbox" id="fogOfWarCheckbox" checked>
-                        <span class="setting-title">Fog of War</span>
-                    </label>
-                    <p class="setting-description">
-                        Enable tactical mode with limited visibility. Enemy ships are only visible within your fleet's vision range.
-                        Vision ranges are scaled for the fine grid (Sloop=8, Frigate=6, Flagship=4).
-                    </p>
-                </div>
-                <div class="setting-item">
-                    <label for="combatDetailLevelSelect" class="setting-label">
-                        <span class="setting-title">Combat Report Detail</span>
-                    </label>
-                    <p class="setting-description">
-                        Detailed shows full per-cannon combat reports. Compact shows brief summaries in the feed.
-                    </p>
-                    <select id="combatDetailLevelSelect" class="setting-select">
-                        <option value="detailed" selected>Detailed</option>
-                        <option value="compact">Compact</option>
-                    </select>
-                </div>
-                <div class="setting-item">
-                    <label for="boardLayoutSelect" class="setting-label">
-                        <span class="setting-title">Board Layout</span>
-                    </label>
-                    <p class="setting-description">
-                        Choose landscape (40×30) or portrait (30×40) board orientation.
-                    </p>
-                    <select id="boardLayoutSelect" class="setting-select">
-                        <option value="landscape" selected>Landscape (40×30)</option>
-                        <option value="portrait">Portrait (30×40)</option>
-                    </select>
-                </div>
-                <div class="setting-item">
-                    <label for="muteAllCheckbox" class="setting-label">
-                        <input type="checkbox" id="muteAllCheckbox">
-                        <span class="setting-title">Mute All Audio</span>
-                    </label>
-                    <p class="setting-description">
-                        Mutes all game audio when enabled. Use the sliders below for volume control when unmuted.
-                    </p>
-                    <div class="audio-controls">
-                        <div class="audio-control-row">
-                            <label for="masterVolumeSlider" class="audio-control-label">Master Volume</label>
-                            <span id="masterVolumeValue" class="audio-control-value">70%</span>
-                            <input type="range" id="masterVolumeSlider" min="0" max="100" step="1" value="70" class="audio-slider">
-                        </div>
-                        <div class="audio-control-row">
-                            <label for="effectsVolumeSlider" class="audio-control-label">Effects Volume</label>
-                            <span id="effectsVolumeValue" class="audio-control-value">80%</span>
-                            <input type="range" id="effectsVolumeSlider" min="0" max="100" step="1" value="80" class="audio-slider">
-                        </div>
-                        <div class="audio-control-row">
-                            <label for="uiVolumeSlider" class="audio-control-label">UI Volume</label>
-                            <span id="uiVolumeValue" class="audio-control-value">70%</span>
-                            <input type="range" id="uiVolumeSlider" min="0" max="100" step="1" value="70" class="audio-slider">
-                        </div>
-                        <div class="audio-control-row">
-                            <label for="musicVolumeSlider" class="audio-control-label">Music Volume</label>
-                            <span id="musicVolumeValue" class="audio-control-value">50%</span>
-                            <input type="range" id="musicVolumeSlider" min="0" max="100" step="1" value="50" class="audio-slider">
+            <div class="settings-categories">
+                <section class="settings-category" aria-labelledby="settingsCategoryRules">
+                    <h3 id="settingsCategoryRules">Game Rules</h3>
+                    <div class="settings-grid">
+                        <div class="setting-row">
+                            <div class="setting-label-wrap">
+                                <label for="fogOfWarCheckbox" class="setting-title">Fog of War</label>
+                                <span class="info-icon" tabindex="0" aria-label="Fog of War details">
+                                    i
+                                    <span class="tooltip-content">Enable tactical mode with limited visibility. Enemy ships are only visible within your fleet's vision range. Vision ranges are scaled for the fine grid (Sloop=8, Frigate=6, Flagship=4).</span>
+                                </span>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch" for="fogOfWarCheckbox">
+                                    <input type="checkbox" id="fogOfWarCheckbox" checked>
+                                    <span class="slider" aria-hidden="true"></span>
+                                </label>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </section>
+
+                <section class="settings-category" aria-labelledby="settingsCategoryInterface">
+                    <h3 id="settingsCategoryInterface">Interface</h3>
+                    <div class="settings-grid">
+                        <div class="setting-row">
+                            <div class="setting-label-wrap">
+                                <label for="combatDetailLevelSelect" class="setting-title">Combat Report Detail</label>
+                                <span class="info-icon" tabindex="0" aria-label="Combat detail description">
+                                    i
+                                    <span class="tooltip-content">Detailed shows full per-cannon combat reports. Compact shows brief summaries in the feed.</span>
+                                </span>
+                            </div>
+                            <div class="setting-control">
+                                <select id="combatDetailLevelSelect" class="setting-select">
+                                    <option value="detailed" selected>Detailed</option>
+                                    <option value="compact">Compact</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-label-wrap">
+                                <label for="boardLayoutSelect" class="setting-title">Board Layout</label>
+                                <span class="info-icon" tabindex="0" aria-label="Board layout description">
+                                    i
+                                    <span class="tooltip-content">Choose landscape (40x30) or portrait (30x40) board orientation.</span>
+                                </span>
+                            </div>
+                            <div class="setting-control">
+                                <select id="boardLayoutSelect" class="setting-select">
+                                    <option value="landscape" selected>Landscape (40x30)</option>
+                                    <option value="portrait">Portrait (30x40)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-category" aria-labelledby="settingsCategoryAudio">
+                    <h3 id="settingsCategoryAudio">Audio</h3>
+                    <div class="settings-grid">
+                        <div class="setting-row">
+                            <div class="setting-label-wrap">
+                                <label for="muteAllCheckbox" class="setting-title">Mute All Audio</label>
+                                <span class="info-icon" tabindex="0" aria-label="Mute audio description">
+                                    i
+                                    <span class="tooltip-content">Mutes all game audio when enabled. Use the sliders below for volume control when unmuted.</span>
+                                </span>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch" for="muteAllCheckbox">
+                                    <input type="checkbox" id="muteAllCheckbox">
+                                    <span class="slider" aria-hidden="true"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-row setting-row-wide">
+                            <div class="audio-controls">
+                                <div class="audio-control-row">
+                                    <label for="masterVolumeSlider" class="audio-control-label">Master Volume</label>
+                                    <span id="masterVolumeValue" class="audio-control-value">70%</span>
+                                    <input type="range" id="masterVolumeSlider" min="0" max="100" step="1" value="70" class="audio-slider">
+                                </div>
+                                <div class="audio-control-row">
+                                    <label for="effectsVolumeSlider" class="audio-control-label">Effects Volume</label>
+                                    <span id="effectsVolumeValue" class="audio-control-value">80%</span>
+                                    <input type="range" id="effectsVolumeSlider" min="0" max="100" step="1" value="80" class="audio-slider">
+                                </div>
+                                <div class="audio-control-row">
+                                    <label for="uiVolumeSlider" class="audio-control-label">UI Volume</label>
+                                    <span id="uiVolumeValue" class="audio-control-value">70%</span>
+                                    <input type="range" id="uiVolumeSlider" min="0" max="100" step="1" value="70" class="audio-slider">
+                                </div>
+                                <div class="audio-control-row">
+                                    <label for="musicVolumeSlider" class="audio-control-label">Music Volume</label>
+                                    <span id="musicVolumeValue" class="audio-control-value">50%</span>
+                                    <input type="range" id="musicVolumeSlider" min="0" max="100" step="1" value="50" class="audio-slider">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
             <div class="settings-actions">
                 <button id="startGameBtn" class="action-btn primary" type="button">Start Game</button>
