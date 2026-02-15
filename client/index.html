@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shrouded Sails</title>
     <link rel="stylesheet" href="./css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="game-container">
@@ -110,12 +113,20 @@
         aria-labelledby="splashTitle"
         aria-describedby="splashDescription"
     >
-        <div class="modal-content splash-modal-content">
+        <div class="splash-top">
+            <div class="splash-ornament" aria-hidden="true">&#9875;</div>
             <h2 id="splashTitle">Shrouded Sails</h2>
-            <p id="splashDescription" class="splash-tagline">Chart the fog. Command your fleet.</p>
-            <p class="splash-hint">Click anywhere to continue</p>
+            <div class="splash-divider" aria-hidden="true">
+                <span class="splash-divider-line"></span>
+                <span class="splash-divider-diamond">&#9830;</span>
+                <span class="splash-divider-line"></span>
+            </div>
+            <p id="splashDescription" class="splash-tagline">Navigate the Fog &middot; Command Your Fleet &middot; Conquer the Seas</p>
+        </div>
+        <div class="splash-bottom">
+            <p class="splash-hint">Press any key or click to begin</p>
             <button id="continueFromSplashBtn" class="action-btn primary splash-continue-btn" type="button">
-                Continue
+                Begin Your Voyage
             </button>
         </div>
     </div>

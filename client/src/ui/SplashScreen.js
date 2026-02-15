@@ -5,7 +5,6 @@ export class SplashScreen {
         this.hasContinued = false;
 
         this.modalElement = document.getElementById('splashModal');
-        this.contentElement = this.modalElement ? this.modalElement.querySelector('.splash-modal-content') : null;
         this.continueButton = document.getElementById('continueFromSplashBtn');
 
         this.boundContinue = (event) => this.handleContinue(event);
@@ -21,9 +20,6 @@ export class SplashScreen {
         }
 
         this.modalElement.addEventListener('click', this.boundContinue);
-        if (this.contentElement) {
-            this.contentElement.addEventListener('click', this.boundContinue);
-        }
         if (this.continueButton) {
             this.continueButton.addEventListener('click', this.boundContinue);
         }

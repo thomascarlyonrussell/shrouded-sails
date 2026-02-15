@@ -1308,39 +1308,148 @@ body.startup-overlay-active .game-container {
     margin-bottom: 12px;
 }
 
+/* Splash screen animations */
+@keyframes splashFadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes splashHintPulse {
+    0%, 100% { opacity: 0.5; }
+    50%      { opacity: 1; }
+}
+
+/* Full-screen splash with background image */
 .splash-modal {
     cursor: pointer;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12vh 24px 8vh;
+    background: url('../public/assets/images/splash.webp') center / cover no-repeat;
 }
 
-.splash-modal-content {
+/* Vignette overlay for text readability */
+.splash-modal::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at center, transparent 20%, rgba(3, 8, 14, 0.55) 70%, rgba(3, 8, 14, 0.85) 100%),
+        linear-gradient(to bottom, rgba(3, 8, 14, 0.6) 0%, transparent 25%, transparent 70%, rgba(3, 8, 14, 0.65) 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Top group: title area */
+.splash-top {
+    position: relative;
+    z-index: 1;
     text-align: center;
-    cursor: default;
-    max-width: 560px;
-    padding: 34px 28px 26px;
+    animation: splashFadeIn 1s ease-out both;
 }
 
-.splash-modal-content h2 {
-    font-size: clamp(40px, 7vw, 64px);
-    letter-spacing: 2px;
+/* Bottom group: hint + button */
+.splash-bottom {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    animation: splashFadeIn 1s ease-out 0.4s both;
+}
+
+.splash-ornament {
+    font-size: 32px;
     margin-bottom: 10px;
+    color: rgba(180, 210, 240, 0.6);
+    filter: drop-shadow(0 0 6px rgba(88, 145, 194, 0.4));
+}
+
+.splash-modal h2 {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: clamp(44px, 9vw, 76px);
+    letter-spacing: 8px;
+    margin-bottom: 14px;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: transparent;
+    background: linear-gradient(180deg, #ffffff 0%, #c2d8ec 50%, #7fa8c9 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.8))
+            drop-shadow(0 0 30px rgba(88, 145, 194, 0.25));
+    line-height: 1.1;
+}
+
+.splash-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.splash-divider-line {
+    display: block;
+    width: 72px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(180, 210, 240, 0.55), transparent);
+}
+
+.splash-divider-diamond {
+    font-size: 10px;
+    color: rgba(180, 210, 240, 0.55);
 }
 
 .splash-tagline {
+    font-family: 'Cinzel', Georgia, serif;
     margin: 0;
-    font-size: 18px;
-    color: #d0e4f4;
+    font-size: 17px;
+    color: #d4e6f5;
+    font-weight: 400;
+    letter-spacing: 3px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9),
+                 0 0 20px rgba(0, 0, 0, 0.5);
+    text-transform: uppercase;
+    line-height: 1.6;
 }
 
 .splash-hint {
-    margin: 14px 0 22px;
-    font-size: 13px;
-    color: #8db4d4;
+    margin: 0 0 20px;
+    font-size: 11px;
+    color: #a0c4de;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 3px;
+    font-weight: 500;
+    animation: splashHintPulse 3s ease-in-out infinite;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
 }
 
 .splash-continue-btn {
-    width: min(260px, 100%);
+    width: min(300px, 85vw);
+    font-family: 'Cinzel', Georgia, serif;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-size: 15px;
+    text-transform: uppercase;
+    padding: 16px 36px;
+    background: linear-gradient(135deg, rgba(39, 174, 96, 0.7) 0%, rgba(34, 153, 84, 0.7) 100%);
+    border: 1px solid rgba(46, 204, 113, 0.35);
+    border-radius: 10px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4),
+                0 0 16px rgba(39, 174, 96, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: all 0.25s ease;
+}
+
+.splash-continue-btn:hover {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.85) 0%, rgba(39, 174, 96, 0.85) 100%);
+    border-color: rgba(46, 204, 113, 0.5);
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.4),
+                0 0 24px rgba(46, 204, 113, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
 }
 
 .tutorial-overlay {
@@ -1445,16 +1554,35 @@ body.startup-overlay-active .game-container {
         grid-template-columns: 1fr;
     }
 
-    .splash-modal-content h2 {
-        font-size: clamp(34px, 12vw, 48px);
+    .splash-modal {
+        padding: 8vh 16px 6vh;
+    }
+
+    .splash-modal h2 {
+        font-size: clamp(32px, 10vw, 50px);
+        letter-spacing: 4px;
+    }
+
+    .splash-ornament {
+        font-size: 26px;
     }
 
     .splash-tagline {
-        font-size: 16px;
+        font-size: 13px;
+        letter-spacing: 1.5px;
     }
 
     .splash-hint {
-        margin-bottom: 18px;
+        margin-bottom: 16px;
+    }
+
+    .splash-divider-line {
+        width: 44px;
+    }
+
+    .splash-continue-btn {
+        padding: 14px 28px;
+        font-size: 14px;
     }
 
     .tutorial-card {
