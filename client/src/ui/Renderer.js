@@ -379,16 +379,6 @@ export class Renderer {
                 this.drawFlagship(shipColor, shipWidth, shipHeight);
             }
 
-            // Draw ship level indicator
-            this.ctx.fillStyle = '#fff';
-            this.ctx.strokeStyle = '#000';
-            this.ctx.lineWidth = 3;
-            this.ctx.font = 'bold 20px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.strokeText(ship.type.toString(), 0, 0);
-            this.ctx.fillText(ship.type.toString(), 0, 0);
-
             // Draw flagship indicator
             if (ship.isFlagship) {
                 this.ctx.fillStyle = '#f1c40f';
@@ -663,136 +653,215 @@ export class Renderer {
     }
 
     drawSloop(shipColor, shipSize, shipHeight) {
-        // Small, simple triangle - fast and nimble
+        const width = shipSize;
+        const height = shipHeight;
+        const bowY = -height / 2;
+        const sternY = height / 2;
+
+        // Compact hull silhouette: pointed bow, curved sides, flat stern.
         this.ctx.fillStyle = shipColor;
         this.ctx.beginPath();
-        this.ctx.moveTo(0, -shipHeight / 2);  // Bow (front)
-        this.ctx.lineTo(-shipSize / 2, shipHeight / 2);  // Port stern
-        this.ctx.lineTo(shipSize / 2, shipHeight / 2);   // Starboard stern
+        this.ctx.moveTo(0, bowY);
+        this.ctx.quadraticCurveTo(width * 0.42, -height * 0.06, width * 0.3, sternY);
+        this.ctx.lineTo(-width * 0.3, sternY);
+        this.ctx.quadraticCurveTo(-width * 0.42, -height * 0.06, 0, bowY);
         this.ctx.closePath();
         this.ctx.fill();
-
-        // Outline
         this.ctx.strokeStyle = '#000';
         this.ctx.lineWidth = 2;
         this.ctx.stroke();
 
-        // Small deck
-        const deckColor = this.adjustColorBrightness(shipColor, 30);
+        // Inner deck region.
+        const deckColor = this.adjustColorBrightness(shipColor, 24);
         this.ctx.fillStyle = deckColor;
         this.ctx.beginPath();
-        this.ctx.moveTo(0, -shipHeight / 4);
-        this.ctx.lineTo(-shipSize / 4, shipHeight / 4);
-        this.ctx.lineTo(shipSize / 4, shipHeight / 4);
+        this.ctx.moveTo(0, -height * 0.27);
+        this.ctx.quadraticCurveTo(width * 0.19, -height * 0.07, width * 0.14, height * 0.25);
+        this.ctx.lineTo(-width * 0.14, height * 0.25);
+        this.ctx.quadraticCurveTo(-width * 0.19, -height * 0.07, 0, -height * 0.27);
         this.ctx.closePath();
         this.ctx.fill();
+
+        // Single mast with outlined shaft and crossbar.
+        const mastX = -width * 0.1;
+        const mastTop = -height * 0.2;
+        const mastBottom = height * 0.2;
+        this.ctx.strokeStyle = '#000';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(mastX, mastBottom);
+        this.ctx.lineTo(mastX, mastTop);
+        this.ctx.stroke();
+        this.ctx.strokeStyle = '#fff';
+        this.ctx.lineWidth = 1.2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(mastX, mastBottom);
+        this.ctx.lineTo(mastX, mastTop);
+        this.ctx.stroke();
+        this.ctx.strokeStyle = '#000';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(mastX - width * 0.09, -height * 0.04);
+        this.ctx.lineTo(mastX + width * 0.09, -height * 0.04);
+        this.ctx.stroke();
+        this.ctx.strokeStyle = '#fff';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(mastX - width * 0.09, -height * 0.04);
+        this.ctx.lineTo(mastX + width * 0.09, -height * 0.04);
+        this.ctx.stroke();
     }
 
     drawFrigate(shipColor, shipWidth, shipHeight, orientation = 'horizontal') {
-        // Pentagon shape - wider and more substantial
         const width = shipWidth;
         const height = shipHeight;
-        const bowDepth = orientation === 'vertical' ? height * 0.5 : height * 0.45;
+        const bowY = -height / 2;
+        const sternY = height / 2;
+        const sternHalfWidth = width * (orientation === 'vertical' ? 0.16 : 0.22);
 
+        // Elongated hull silhouette with pronounced bow and tapered stern.
         this.ctx.fillStyle = shipColor;
         this.ctx.beginPath();
-        this.ctx.moveTo(0, -bowDepth);  // Bow
-        this.ctx.lineTo(width / 2, -height / 6);  // Starboard fore
-        this.ctx.lineTo(width / 2, height / 2);   // Starboard aft
-        this.ctx.lineTo(-width / 2, height / 2);  // Port aft
-        this.ctx.lineTo(-width / 2, -height / 6); // Port fore
+        this.ctx.moveTo(0, bowY);
+        this.ctx.quadraticCurveTo(width * 0.58, -height * 0.02, sternHalfWidth, sternY);
+        this.ctx.lineTo(-sternHalfWidth, sternY);
+        this.ctx.quadraticCurveTo(-width * 0.58, -height * 0.02, 0, bowY);
         this.ctx.closePath();
         this.ctx.fill();
-
-        // Outline
         this.ctx.strokeStyle = '#000';
         this.ctx.lineWidth = 2;
         this.ctx.stroke();
 
-        // Deck details
-        const deckColor = this.adjustColorBrightness(shipColor, 30);
+        // Inner deck.
+        const deckColor = this.adjustColorBrightness(shipColor, 24);
         this.ctx.fillStyle = deckColor;
         this.ctx.beginPath();
-        this.ctx.moveTo(0, -height / 3);
-        this.ctx.lineTo(width / 3, 0);
-        this.ctx.lineTo(width / 3, height / 3);
-        this.ctx.lineTo(-width / 3, height / 3);
-        this.ctx.lineTo(-width / 3, 0);
+        this.ctx.moveTo(0, -height * 0.3);
+        this.ctx.quadraticCurveTo(width * 0.32, -height * 0.04, sternHalfWidth * 0.75, height * 0.28);
+        this.ctx.lineTo(-sternHalfWidth * 0.75, height * 0.28);
+        this.ctx.quadraticCurveTo(-width * 0.32, -height * 0.04, 0, -height * 0.3);
         this.ctx.closePath();
         this.ctx.fill();
 
-        // Gun ports (small rectangles)
+        // Two outlined masts with small crossbars.
+        const mastXs = [-width * 0.2, width * 0.2];
+        for (const mastX of mastXs) {
+            const mastTop = -height * 0.22;
+            const mastBottom = height * 0.24;
+            this.ctx.strokeStyle = '#000';
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.moveTo(mastX, mastBottom);
+            this.ctx.lineTo(mastX, mastTop);
+            this.ctx.stroke();
+            this.ctx.strokeStyle = '#fff';
+            this.ctx.lineWidth = 1.2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(mastX, mastBottom);
+            this.ctx.lineTo(mastX, mastTop);
+            this.ctx.stroke();
+            this.ctx.strokeStyle = '#000';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(mastX - width * 0.07, -height * 0.03);
+            this.ctx.lineTo(mastX + width * 0.07, -height * 0.03);
+            this.ctx.stroke();
+            this.ctx.strokeStyle = '#fff';
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.moveTo(mastX - width * 0.07, -height * 0.03);
+            this.ctx.lineTo(mastX + width * 0.07, -height * 0.03);
+            this.ctx.stroke();
+        }
+
+        // Single row of gun ports, one per side.
         this.ctx.fillStyle = '#000';
-        const portY1 = height / 6;
-        const portY2 = height / 3;
-        this.ctx.fillRect(-width / 3, portY1, 3, 3);
-        this.ctx.fillRect(width / 3 - 3, portY1, 3, 3);
+        const portY = height * 0.2;
+        const portWidth = Math.max(2, Math.min(4, width * 0.08));
+        const portHeight = Math.max(2, Math.min(4, height * 0.2));
+        this.ctx.fillRect(-width * 0.33, portY, portWidth, portHeight);
+        this.ctx.fillRect(width * 0.33 - portWidth, portY, portWidth, portHeight);
     }
 
     drawFlagship(shipColor, shipSize, shipHeight) {
-        // Large hexagon - imposing and powerful
         const width = shipSize;
         const height = shipHeight * 1.1;
+        const bowY = -height / 2;
+        const sternY = height / 2;
 
+        // Wide hull silhouette with stronger curve and tapered stern point.
         this.ctx.fillStyle = shipColor;
         this.ctx.beginPath();
-        this.ctx.moveTo(0, -height / 2);  // Bow
-        this.ctx.lineTo(width / 2.5, -height / 3);  // Starboard fore
-        this.ctx.lineTo(width / 2.5, height / 3);   // Starboard mid
-        this.ctx.lineTo(0, height / 2);   // Stern
-        this.ctx.lineTo(-width / 2.5, height / 3);  // Port mid
-        this.ctx.lineTo(-width / 2.5, -height / 3); // Port fore
+        this.ctx.moveTo(0, bowY);
+        this.ctx.quadraticCurveTo(width * 0.64, -height * 0.02, 0, sternY);
+        this.ctx.quadraticCurveTo(-width * 0.64, -height * 0.02, 0, bowY);
         this.ctx.closePath();
         this.ctx.fill();
-
-        // Outline
         this.ctx.strokeStyle = '#000';
         this.ctx.lineWidth = 2.5;
         this.ctx.stroke();
 
-        // Multiple deck levels
-        const deckColor = this.adjustColorBrightness(shipColor, 30);
+        // Main deck.
+        const deckColor = this.adjustColorBrightness(shipColor, 24);
         this.ctx.fillStyle = deckColor;
-
-        // Main deck
         this.ctx.beginPath();
-        this.ctx.moveTo(0, -height / 3);
-        this.ctx.lineTo(width / 3.5, -height / 6);
-        this.ctx.lineTo(width / 3.5, height / 4);
-        this.ctx.lineTo(-width / 3.5, height / 4);
-        this.ctx.lineTo(-width / 3.5, -height / 6);
+        this.ctx.moveTo(0, -height * 0.33);
+        this.ctx.quadraticCurveTo(width * 0.39, -height * 0.02, 0, height * 0.24);
+        this.ctx.quadraticCurveTo(-width * 0.39, -height * 0.02, 0, -height * 0.33);
         this.ctx.closePath();
         this.ctx.fill();
 
-        // Upper deck
-        const upperDeckColor = this.adjustColorBrightness(shipColor, 50);
+        // Upper deck.
+        const upperDeckColor = this.adjustColorBrightness(shipColor, 40);
         this.ctx.fillStyle = upperDeckColor;
         this.ctx.beginPath();
-        this.ctx.moveTo(0, -height / 4);
-        this.ctx.lineTo(width / 5, -height / 8);
-        this.ctx.lineTo(width / 5, height / 8);
-        this.ctx.lineTo(-width / 5, height / 8);
-        this.ctx.lineTo(-width / 5, -height / 8);
+        this.ctx.moveTo(0, -height * 0.22);
+        this.ctx.quadraticCurveTo(width * 0.22, -height * 0.04, 0, height * 0.1);
+        this.ctx.quadraticCurveTo(-width * 0.22, -height * 0.04, 0, -height * 0.22);
         this.ctx.closePath();
         this.ctx.fill();
 
-        // Gun ports (multiple rows)
-        this.ctx.fillStyle = '#000';
-        const portWidth = 3;
-        const portHeight = 3;
-
-        // Upper gun deck
-        for (let i = 0; i < 2; i++) {
-            const y = -height / 6 + i * height / 6;
-            this.ctx.fillRect(-width / 3, y, portWidth, portHeight);
-            this.ctx.fillRect(width / 3 - portWidth, y, portWidth, portHeight);
+        // Three outlined masts with crossbars.
+        const mastXs = [-width * 0.22, 0, width * 0.22];
+        for (const mastX of mastXs) {
+            const mastTop = -height * 0.22;
+            const mastBottom = height * 0.22;
+            this.ctx.strokeStyle = '#000';
+            this.ctx.lineWidth = 3.2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(mastX, mastBottom);
+            this.ctx.lineTo(mastX, mastTop);
+            this.ctx.stroke();
+            this.ctx.strokeStyle = '#fff';
+            this.ctx.lineWidth = 1.4;
+            this.ctx.beginPath();
+            this.ctx.moveTo(mastX, mastBottom);
+            this.ctx.lineTo(mastX, mastTop);
+            this.ctx.stroke();
+            this.ctx.strokeStyle = '#000';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(mastX - width * 0.07, -height * 0.02);
+            this.ctx.lineTo(mastX + width * 0.07, -height * 0.02);
+            this.ctx.stroke();
+            this.ctx.strokeStyle = '#fff';
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.moveTo(mastX - width * 0.07, -height * 0.02);
+            this.ctx.lineTo(mastX + width * 0.07, -height * 0.02);
+            this.ctx.stroke();
         }
 
-        // Lower gun deck
-        for (let i = 0; i < 2; i++) {
-            const y = height / 12 + i * height / 6;
-            this.ctx.fillRect(-width / 3.5, y, portWidth, portHeight);
-            this.ctx.fillRect(width / 3.5 - portWidth, y, portWidth, portHeight);
+        // Two rows of gun ports, two ports per side per row.
+        this.ctx.fillStyle = '#000';
+        const portWidth = Math.max(2, Math.min(4, width * 0.08));
+        const portHeight = Math.max(2, Math.min(4, height * 0.07));
+        const rows = [-height * 0.06, height * 0.14];
+        for (const y of rows) {
+            this.ctx.fillRect(-width * 0.36, y, portWidth, portHeight);
+            this.ctx.fillRect(-width * 0.24, y, portWidth, portHeight);
+            this.ctx.fillRect(width * 0.24 - portWidth, y, portWidth, portHeight);
+            this.ctx.fillRect(width * 0.36 - portWidth, y, portWidth, portHeight);
         }
     }
 
