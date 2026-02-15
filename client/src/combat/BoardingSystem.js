@@ -1,4 +1,21 @@
 export class BoardingSystem {
+    static getNearestTileDistance(attacker, defender, gameMap = null) {
+        const sourceTiles = attacker.getOccupiedTiles();
+        const targetTiles = defender.getOccupiedTiles();
+        let minDistance = Infinity;
+
+        for (const source of sourceTiles) {
+            for (const target of targetTiles) {
+                const distance = gameMap
+                    ? gameMap.getDistance(source.x, source.y, target.x, target.y)
+                    : Math.abs(source.x - target.x) + Math.abs(source.y - target.y);
+                minDistance = Math.min(minDistance, distance);
+            }
+        }
+
+        return minDistance;
+    }
+
     static getBoardingChanceBreakdown(attacker, defender) {
         const baseChance = 40;
         const levelModifier = attacker.type * 10;
@@ -25,10 +42,43 @@ export class BoardingSystem {
         return Math.random() * 100;
     }
 
-    static attemptBoarding(attacker, defender) {
+    static attemptBoarding(attacker, defender, gameMap = null) {
         console.log(`${attacker.name} attempts to board ${defender.name}`);
         const computedBreakdown = this.getBoardingChanceBreakdown(attacker, defender);
         const defenderOwnerBefore = defender.owner;
+
+        const nearestTileDistance = this.getNearestTileDistance(attacker, defender, gameMap);
+        if (nearestTileDistance !== 1) {
+            console.log(`Cannot board! ${attacker.name} is not adjacent to ${defender.name} (distance ${nearestTileDistance}).`);
+            return {
+                attacker: attacker,
+                defender: defender,
+                defenderOwnerBefore: defenderOwnerBefore,
+                defenderOwnerAfter: defender.owner,
+                boardingChance: 0,
+                roll: 0,
+                success: false,
+                chanceBreakdown: {
+                    baseChance: computedBreakdown.baseChance,
+                    levelModifier: computedBreakdown.levelModifier,
+                    hpRatioModifier: computedBreakdown.hpRatioModifier,
+                    finalChance: 0,
+                    reason: 'not-adjacent'
+                },
+                resolution: {
+                    roll: 0,
+                    success: false,
+                    attackerDamage: 0,
+                    defenderDamage: 0,
+                    resultType: 'out-of-range'
+                },
+                attackerDestroyed: attacker.isDestroyed,
+                defenderDestroyed: defender.isDestroyed,
+                defenderCaptured: false,
+                outOfRange: true,
+                nearestTileDistance
+            };
+        }
 
         // Check if attacker's level is high enough to capture the defender
         // Ships can only capture vessels of a lower level

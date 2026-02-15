@@ -23,7 +23,12 @@ export class Fleet {
                         orientation,
                         null
                     );
-                    return check.clear && gameMap.isInStartingZone(pos.x, pos.y);
+                    return check.clear && gameMap.isFootprintInStartingZone(
+                        pos.x,
+                        pos.y,
+                        shipType.footprint,
+                        orientation
+                    );
                 });
 
                 if (candidateIndex === -1) continue;
@@ -39,7 +44,7 @@ export class Fleet {
     getStartingPositions(gameMap) {
         const positions = [];
         const zoneSize = MAP_GENERATION.STARTING_ZONE_SIZE;
-        const edgeBuffer = 1;
+        const edgeBuffer = MAP_GENERATION.EDGE_BUFFER;
 
         if (gameMap.layout === 'portrait') {
             const startY = this.owner === 'player1' ? edgeBuffer : gameMap.height - zoneSize - edgeBuffer;

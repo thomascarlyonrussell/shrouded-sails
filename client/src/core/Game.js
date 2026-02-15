@@ -276,57 +276,84 @@ export class Game {
             return false;
         }
 
-        // Check for unseen enemy ship collision
-        const shipAtDestination = this.map.getShipAt(x, y, this.selectedShip);
-        if (shipAtDestination && shipAtDestination.owner !== this.selectedShip.owner) {
-            // There's an enemy ship at destination - check if it's visible
-            const isVisible = this.fogOfWar
-                ? this.fogOfWar.isShipVisible(shipAtDestination, this.currentPlayer)
-                : true;
+        const targetPos = this.validMovePositions.find(pos => pos.x === x && pos.y === y);
+        const targetOrientation = targetPos?.orientation || this.selectedShip.orientation;
 
-            if (!isVisible) {
-                // Collision with unseen enemy ship!
-                console.log(`⚠️ COLLISION! ${this.selectedShip.name} ran into unseen ${shipAtDestination.name}!`);
+        const destinationConflicts = this.map.getFootprintConflicts(
+            x,
+            y,
+            this.selectedShip.footprint,
+            targetOrientation,
+            this.selectedShip
+        );
+        const hiddenEnemyConflicts = destinationConflicts.filter(ship => (
+            ship.owner !== this.selectedShip.owner
+            && this.fogOfWar
+            && !this.fogOfWar.isShipVisible(ship, this.currentPlayer)
+        ));
 
-                // Both ships take 1 damage
-                this.selectedShip.takeDamage(1);
-                shipAtDestination.takeDamage(1);
-                console.log(`Both ships take 1 damage from collision`);
-                if ((this.selectedShip.isDestroyed || shipAtDestination.isDestroyed) && this.audioManager) {
-                    this.audioManager.play('ship_sunk');
+        if (hiddenEnemyConflicts.length > 0) {
+            const hiddenNames = hiddenEnemyConflicts.map(ship => ship.name).join(', ');
+            console.log(`⚠️ COLLISION! ${this.selectedShip.name} ran into unseen ship(s): ${hiddenNames}!`);
+
+            // The moving ship takes one collision hit, and each collided hidden enemy takes one.
+            this.selectedShip.takeDamage(1);
+            hiddenEnemyConflicts.forEach(ship => ship.takeDamage(1));
+            console.log(`Collision damage applied to moving ship and ${hiddenEnemyConflicts.length} hidden ship(s).`);
+            [this.selectedShip, ...hiddenEnemyConflicts].forEach(ship => this.map.refreshShipRegistration(ship));
+
+            const anyDestroyed = this.selectedShip.isDestroyed || hiddenEnemyConflicts.some(ship => ship.isDestroyed);
+            if (anyDestroyed && this.audioManager) {
+                this.audioManager.play('ship_sunk');
+            }
+
+            // Find an adjacent empty tile for the moving ship.
+            const adjacentTile = this.findAdjacentEmptyTile(x, y, this.selectedShip, targetOrientation);
+            if (adjacentTile) {
+                if (this.selectedShip.type === 2) {
+                    this.selectedShip.orientation = adjacentTile.orientation;
                 }
-
-                // Find an adjacent empty tile for the moving ship
-                const adjacentTile = this.findAdjacentEmptyTile(x, y, this.selectedShip);
-
-                if (adjacentTile) {
-                    // Move to adjacent tile
-                    const distance = Math.abs(this.selectedShip.x - adjacentTile.x) + Math.abs(this.selectedShip.y - adjacentTile.y);
-                    this.selectedShip.moveTo(adjacentTile.x, adjacentTile.y);
+                const moved = this.selectedShip.moveTo(adjacentTile.x, adjacentTile.y);
+                if (moved) {
+                    this.map.refreshShipRegistration(this.selectedShip);
                     console.log(`Ship deflected to adjacent tile (${adjacentTile.x}, ${adjacentTile.y})`);
                 } else {
-                    // No adjacent tile available - ship doesn't move
-                    console.log(`No adjacent tile available - ship stays at (${this.selectedShip.x}, ${this.selectedShip.y})`);
+                    console.log('No valid deflection within remaining movement range.');
                 }
-
-                // Exit move mode
-                this.actionMode = ACTION_MODES.NONE;
-                this.validMovePositions = [];
-                if (this.audioManager) {
-                    this.audioManager.play('ship_move');
-                }
-
-                return true;
+            } else {
+                // No adjacent tile available - ship doesn't move.
+                console.log(`No adjacent tile available - ship stays at (${this.selectedShip.x}, ${this.selectedShip.y})`);
             }
+
+            // Exit move mode
+            this.actionMode = ACTION_MODES.NONE;
+            this.validMovePositions = [];
+            if (this.audioManager) {
+                this.audioManager.play('ship_move');
+            }
+
+            return true;
+        }
+
+        const blockingVisibleConflict = destinationConflicts.some(ship => (
+            ship.owner === this.selectedShip.owner
+            || !this.fogOfWar
+            || this.fogOfWar.isShipVisible(ship, this.currentPlayer)
+        ));
+        if (blockingVisibleConflict) {
+            if (this.audioManager) {
+                this.audioManager.play('invalid_action');
+            }
+            return false;
         }
 
         // Normal move (no collision)
         const distance = Math.abs(this.selectedShip.x - x) + Math.abs(this.selectedShip.y - y);
-        if (this.selectedShip.type === 2 && this.validMovePositions) {
-            const targetPos = this.validMovePositions.find(pos => pos.x === x && pos.y === y);
-            if (targetPos?.orientation) this.selectedShip.orientation = targetPos.orientation;
+        if (this.selectedShip.type === 2 && targetPos?.orientation) {
+            this.selectedShip.orientation = targetPos.orientation;
         }
         this.selectedShip.moveTo(x, y);
+        this.map.refreshShipRegistration(this.selectedShip);
 
         console.log(`Ship moved ${distance} spaces to (${x}, ${y})`);
 
@@ -340,7 +367,15 @@ export class Game {
         return true;
     }
 
-    findAdjacentEmptyTile(x, y, movingShip) {
+    getFrigateOrientationForStep(fromX, fromY, toX, toY, fallbackOrientation = 'horizontal') {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        if (Math.abs(dx) > Math.abs(dy)) return 'horizontal';
+        if (Math.abs(dy) > Math.abs(dx)) return 'vertical';
+        return fallbackOrientation;
+    }
+
+    findAdjacentEmptyTile(x, y, movingShip, baseOrientation = movingShip.orientation) {
         // Check all 4 adjacent positions (N, E, S, W)
         const adjacents = [
             { x: x, y: y - 1 },  // North
@@ -353,21 +388,36 @@ export class Game {
         adjacents.sort(() => Math.random() - 0.5);
 
         for (const pos of adjacents) {
-            // Check if position is valid
-            if (!this.map.isValidPosition(pos.x, pos.y)) continue;
+            const candidateOrientation = movingShip.type === 2
+                ? this.getFrigateOrientationForStep(x, y, pos.x, pos.y, baseOrientation)
+                : movingShip.orientation;
+            const orientedFootprint = this.map.getOrientedFootprint(movingShip.footprint, candidateOrientation);
 
-            const check = this.map.isFootprintClear(
+            // Check if position is valid
+            if (!this.map.isValidPosition(pos.x, pos.y, orientedFootprint)) continue;
+
+            const footprintTiles = this.map.getFootprintTiles(
                 pos.x,
                 pos.y,
                 movingShip.footprint,
-                movingShip.orientation,
-                movingShip,
-                this,
-                movingShip.owner
+                candidateOrientation
             );
-            if (!check.clear) continue;
+            const blockedByIsland = footprintTiles.some(tilePos => {
+                const tile = this.map.getTile(tilePos.x, tilePos.y);
+                return !tile || tile.isIsland();
+            });
+            if (blockedByIsland) continue;
 
-            return pos;
+            const conflicts = this.map.getFootprintConflicts(
+                pos.x,
+                pos.y,
+                movingShip.footprint,
+                candidateOrientation,
+                movingShip
+            );
+            if (conflicts.length > 0) continue;
+
+            return { ...pos, orientation: candidateOrientation };
         }
 
         // No valid adjacent tile found
@@ -448,6 +498,8 @@ export class Game {
 
         // Resolve combat
         const result = CombatResolver.resolveAttack(this.selectedShip, target, distance);
+        this.map.refreshShipRegistration(this.selectedShip);
+        this.map.refreshShipRegistration(target);
         if (this.audioManager) {
             this.audioManager.play('cannon_fire');
             const cannonResults = result.cannonResults || result.rolls || [];
@@ -495,7 +547,9 @@ export class Game {
         if (this.audioManager) {
             this.audioManager.play('boarding_attempt');
         }
-        const result = BoardingSystem.attemptBoarding(this.selectedShip, target);
+        const result = BoardingSystem.attemptBoarding(this.selectedShip, target, this.map);
+        this.map.refreshShipRegistration(this.selectedShip);
+        this.map.refreshShipRegistration(target);
         if (this.audioManager) {
             this.audioManager.play(result.success ? 'boarding_success' : 'boarding_failure');
             if (result.attackerDestroyed || result.defenderDestroyed) {

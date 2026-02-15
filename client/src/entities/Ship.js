@@ -130,16 +130,14 @@ export class Ship {
 
     getCenterPoint(anchorX = this.x, anchorY = this.y, orientation = this.orientation) {
         const occupied = this.getOccupiedTiles(anchorX, anchorY, orientation);
-        const xValues = occupied.map(pos => pos.x);
-        const yValues = occupied.map(pos => pos.y);
-        const minX = Math.min(...xValues);
-        const maxX = Math.max(...xValues);
-        const minY = Math.min(...yValues);
-        const maxY = Math.max(...yValues);
+        const xValues = occupied.map(pos => pos.x + 0.5);
+        const yValues = occupied.map(pos => pos.y + 0.5);
+        const centerX = xValues.reduce((sum, value) => sum + value, 0) / xValues.length;
+        const centerY = yValues.reduce((sum, value) => sum + value, 0) / yValues.length;
 
         return {
-            x: (minX + maxX) / 2,
-            y: (minY + maxY) / 2
+            x: centerX,
+            y: centerY
         };
     }
 

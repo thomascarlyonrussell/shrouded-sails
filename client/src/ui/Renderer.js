@@ -12,6 +12,9 @@ export class Renderer {
         this.shakeUntil = 0;
         this.shakeIntensity = 0;
         this.camera = new Camera();
+        this.fogCacheCanvas = null;
+        this.fogCacheCtx = null;
+        this.fogCacheKey = null;
 
         this.canvas.width = this.gameMap.width * this.tileSize;
         this.canvas.height = this.gameMap.height * this.tileSize;
@@ -258,7 +261,7 @@ export class Renderer {
 
         if (tile.isIsland()) {
             this.ctx.fillStyle = COLORS.ISLAND;
-            this.ctx.fillRect(screenX, screenY, width, height);
+            this.ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
 
             // Add simple shading for islands
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
@@ -350,8 +353,12 @@ export class Renderer {
             }
 
             // Draw ship as a triangle (pointing up by default)
-            const shipSize = Math.min(bounds.width, bounds.height) * 0.6;
-            const shipHeight = Math.max(bounds.width, bounds.height) * 0.8;
+            let shipWidth = Math.min(bounds.width, bounds.height) * 0.6;
+            let shipHeight = Math.max(bounds.width, bounds.height) * 0.8;
+            if (ship.type === 2) {
+                shipWidth = bounds.width * 0.82;
+                shipHeight = bounds.height * 0.68;
+            }
 
             this.ctx.save();
             this.ctx.translate(centerX, centerY);
@@ -363,13 +370,13 @@ export class Renderer {
             // Draw ship based on type
             if (ship.type === 1) {
                 // Sloop - Small triangle
-                this.drawSloop(shipColor, shipSize, shipHeight);
+                this.drawSloop(shipColor, shipWidth, shipHeight);
             } else if (ship.type === 2) {
                 // Frigate - Pentagon shape (wider)
-                this.drawFrigate(shipColor, shipSize, shipHeight);
+                this.drawFrigate(shipColor, shipWidth, shipHeight, ship.orientation);
             } else if (ship.type === 3) {
                 // Flagship - Large hexagon with details
-                this.drawFlagship(shipColor, shipSize, shipHeight);
+                this.drawFlagship(shipColor, shipWidth, shipHeight);
             }
 
             // Draw ship level indicator
@@ -512,9 +519,9 @@ export class Renderer {
     }
 
     drawHPBar(ship, screenX, screenY, width = this.tileSize, height = this.tileSize) {
-        const barWidth = width * 0.7;
+        const barWidth = width;
         const barHeight = 5;
-        const barX = screenX + (width - barWidth) / 2;
+        const barX = screenX;
         const barY = screenY + height - barHeight - 3;
 
         // Background (red)
@@ -581,8 +588,8 @@ export class Renderer {
         if (!ship || !ship.isCaptured || ship.isDestroyed) return;
 
         const bounds = this.getShipBounds(ship);
-        const badgeX = screenPos.x + this.tileSize / 2;
-        const badgeY = Math.max(14, screenPos.y - 8);
+        const badgeX = bounds.x + bounds.width / 2;
+        const badgeY = Math.max(14, bounds.y - 8);
 
         this.ctx.save();
         this.ctx.font = 'bold 12px Arial';
@@ -681,14 +688,15 @@ export class Renderer {
         this.ctx.fill();
     }
 
-    drawFrigate(shipColor, shipSize, shipHeight) {
+    drawFrigate(shipColor, shipWidth, shipHeight, orientation = 'horizontal') {
         // Pentagon shape - wider and more substantial
-        const width = shipSize * 0.85;
+        const width = shipWidth;
         const height = shipHeight;
+        const bowDepth = orientation === 'vertical' ? height * 0.5 : height * 0.45;
 
         this.ctx.fillStyle = shipColor;
         this.ctx.beginPath();
-        this.ctx.moveTo(0, -height / 2);  // Bow
+        this.ctx.moveTo(0, -bowDepth);  // Bow
         this.ctx.lineTo(width / 2, -height / 6);  // Starboard fore
         this.ctx.lineTo(width / 2, height / 2);   // Starboard aft
         this.ctx.lineTo(-width / 2, height / 2);  // Port aft
@@ -791,38 +799,70 @@ export class Renderer {
     drawFogOverlay() {
         if (!this.game.fogOfWar) return;
 
-        // Get visible tiles for current player
+        this.ensureFogCacheCanvas();
+
+        // Get visible tiles for current player.
         const visibleTiles = this.game.fogOfWar.calculateVisionCoverage(this.game.currentPlayer);
+        const fogCacheKey = this.buildFogCacheKey(visibleTiles);
 
-        // Draw fog over all tiles that are not visible
-        // Reduced opacity to 0.35 so grid is still visible
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        if (this.fogCacheKey !== fogCacheKey) {
+            this.fogCacheCtx.clearRect(0, 0, this.fogCacheCanvas.width, this.fogCacheCanvas.height);
+            this.fogCacheCtx.fillStyle = 'rgba(0, 0, 0, 0.35)';
 
-        for (let y = 0; y < this.gameMap.height; y++) {
-            for (let x = 0; x < this.gameMap.width; x++) {
-                const tile = this.gameMap.getTile(x, y);
+            for (let y = 0; y < this.gameMap.height; y++) {
+                for (let x = 0; x < this.gameMap.width; x++) {
+                    const tile = this.gameMap.getTile(x, y);
 
-                // Skip islands - they are always visible
-                if (tile.isIsland()) {
-                    continue;
-                }
+                    // Skip islands - they are always visible.
+                    if (tile.isIsland()) continue;
 
-                // Skip tiles with friendly ships - always visible
-                const shipAtTile = this.gameMap.getShipAt(x, y);
-                if (shipAtTile && shipAtTile.owner === this.game.currentPlayer) {
-                    continue;
-                }
+                    // Skip tiles with friendly ships - always visible.
+                    const shipAtTile = this.gameMap.getShipAt(x, y);
+                    if (shipAtTile && shipAtTile.owner === this.game.currentPlayer) continue;
 
-                // Check if tile is visible
-                const tileKey = `${x},${y}`;
-                if (!visibleTiles.has(tileKey)) {
-                    // Draw fog on this tile
-                    const screenX = x * this.tileSize;
-                    const screenY = y * this.tileSize;
-                    this.ctx.fillRect(screenX, screenY, width, height);
+                    const tileKey = `${x},${y}`;
+                    if (!visibleTiles.has(tileKey)) {
+                        const screenX = x * this.tileSize;
+                        const screenY = y * this.tileSize;
+                        this.fogCacheCtx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+                    }
                 }
             }
+
+            this.fogCacheKey = fogCacheKey;
         }
+
+        this.ctx.drawImage(this.fogCacheCanvas, 0, 0);
+    }
+
+    ensureFogCacheCanvas() {
+        if (!this.fogCacheCanvas) {
+            this.fogCacheCanvas = document.createElement('canvas');
+            this.fogCacheCtx = this.fogCacheCanvas.getContext('2d');
+        }
+
+        if (this.fogCacheCanvas.width !== this.canvas.width || this.fogCacheCanvas.height !== this.canvas.height) {
+            this.fogCacheCanvas.width = this.canvas.width;
+            this.fogCacheCanvas.height = this.canvas.height;
+            this.fogCacheKey = null;
+        }
+    }
+
+    buildFogCacheKey(visibleTiles) {
+        let hash = 2166136261;
+        for (const key of visibleTiles) {
+            for (let i = 0; i < key.length; i++) {
+                hash ^= key.charCodeAt(i);
+                hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+            }
+        }
+
+        const friendlyState = this.game
+            .getShipsByOwner(this.game.currentPlayer, false)
+            .map(ship => `${ship.id}:${ship.x},${ship.y},${ship.orientation},${ship.isDestroyed ? 1 : 0}`)
+            .join('|');
+
+        return `${this.game.currentPlayer}|${this.game.turnNumber}|${visibleTiles.size}|${hash >>> 0}|${friendlyState}`;
     }
 
     drawGhostShips() {
@@ -852,19 +892,23 @@ export class Renderer {
         const shipColor = ship.owner === 'player1' ? COLORS.PLAYER1 : COLORS.PLAYER2;
         const ghostColor = shipColor + '66'; // Add alpha for transparency (0.4 opacity)
 
-        const shipSize = this.tileSize * 0.6;
-        const shipHeight = this.tileSize * 0.8;
+        let shipWidth = Math.min(bounds.width, bounds.height) * 0.6;
+        let shipHeight = Math.max(bounds.width, bounds.height) * 0.8;
+        if (ship.type === 2) {
+            shipWidth = bounds.width * 0.82;
+            shipHeight = bounds.height * 0.68;
+        }
 
         // Set dashed border for ghost ships
         this.ctx.setLineDash([5, 5]);
 
         // Draw ship shape based on type
         if (ship.type === 1) {
-            this.drawSloop(ghostColor, shipSize, shipHeight);
+            this.drawSloop(ghostColor, shipWidth, shipHeight);
         } else if (ship.type === 2) {
-            this.drawFrigate(ghostColor, shipSize, shipHeight);
+            this.drawFrigate(ghostColor, shipWidth, shipHeight, orientation);
         } else if (ship.type === 3) {
-            this.drawFlagship(ghostColor, shipSize, shipHeight);
+            this.drawFlagship(ghostColor, shipWidth, shipHeight);
         }
 
         // Draw dashed border

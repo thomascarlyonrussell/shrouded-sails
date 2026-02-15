@@ -8,6 +8,9 @@ export class GameMap {
         this.height = BOARD_LAYOUTS[this.layout]?.height || GRID.HEIGHT;
         this.tiles = [];
         this.ships = [];
+        this.occupiedTiles = new Map();
+        this.shipTileIndex = new Map();
+        this.shipById = new Map();
 
         this.initializeTiles();
         this.generateIslands();
@@ -111,6 +114,35 @@ export class GameMap {
         return false;
     }
 
+    getOrientedFootprint(footprint = { width: 1, height: 1 }, orientation = 'horizontal') {
+        return orientation === 'vertical'
+            ? { width: footprint.height, height: footprint.width }
+            : footprint;
+    }
+
+    getFootprintTiles(x, y, footprint = { width: 1, height: 1 }, orientation = 'horizontal') {
+        const orientedFootprint = this.getOrientedFootprint(footprint, orientation);
+        const tiles = [];
+
+        for (let dy = 0; dy < orientedFootprint.height; dy++) {
+            for (let dx = 0; dx < orientedFootprint.width; dx++) {
+                tiles.push({ x: x + dx, y: y + dy });
+            }
+        }
+
+        return tiles;
+    }
+
+    isFootprintInStartingZone(x, y, footprint = { width: 1, height: 1 }, orientation = 'horizontal') {
+        const orientedFootprint = this.getOrientedFootprint(footprint, orientation);
+        if (!this.isValidPosition(x, y, orientedFootprint)) {
+            return false;
+        }
+
+        const footprintTiles = this.getFootprintTiles(x, y, footprint, orientation);
+        return footprintTiles.every(tile => this.isInStartingZone(tile.x, tile.y));
+    }
+
     isValidIslandPosition(x, y) {
         if (!this.isValidPosition(x, y)) return false;
         if (this.isInStartingZone(x, y)) return false;
@@ -148,61 +180,156 @@ export class GameMap {
     }
 
     isFootprintClear(x, y, footprint = { width: 1, height: 1 }, orientation = 'horizontal', excludeShip = null, game = null, viewingOwner = null) {
-        const orientedFootprint = orientation === 'vertical'
-            ? { width: footprint.height, height: footprint.width }
-            : footprint;
+        const orientedFootprint = this.getOrientedFootprint(footprint, orientation);
 
         if (!this.isValidPosition(x, y, orientedFootprint)) {
             return { clear: false, blockingShip: null };
         }
 
-        for (let dy = 0; dy < orientedFootprint.height; dy++) {
-            for (let dx = 0; dx < orientedFootprint.width; dx++) {
-                const tileX = x + dx;
-                const tileY = y + dy;
-                const tile = this.getTile(tileX, tileY);
-                if (!tile || tile.isIsland()) {
-                    return { clear: false, blockingShip: null };
-                }
-
-                const ship = this.getShipAt(tileX, tileY, excludeShip);
-                if (!ship) continue;
-
-                if (
-                    game
-                    && game.fogOfWar
-                    && ship.owner !== viewingOwner
-                    && !game.fogOfWar.isShipVisible(ship, viewingOwner)
-                ) {
-                    continue;
-                }
-
-                return { clear: false, blockingShip: ship };
+        for (const tilePos of this.getFootprintTiles(x, y, footprint, orientation)) {
+            const tile = this.getTile(tilePos.x, tilePos.y);
+            if (!tile || tile.isIsland()) {
+                return { clear: false, blockingShip: null };
             }
+
+            const ship = this.getShipAt(tilePos.x, tilePos.y, excludeShip);
+            if (!ship) continue;
+
+            if (
+                game
+                && game.fogOfWar
+                && ship.owner !== viewingOwner
+                && !game.fogOfWar.isShipVisible(ship, viewingOwner)
+            ) {
+                continue;
+            }
+
+            return { clear: false, blockingShip: ship };
         }
 
         return { clear: true, blockingShip: null };
+    }
+
+    getFootprintConflicts(x, y, footprint = { width: 1, height: 1 }, orientation = 'horizontal', excludeShip = null) {
+        const orientedFootprint = this.getOrientedFootprint(footprint, orientation);
+        if (!this.isValidPosition(x, y, orientedFootprint)) {
+            return [];
+        }
+
+        const conflicts = new Map();
+        for (const tilePos of this.getFootprintTiles(x, y, footprint, orientation)) {
+            const ship = this.getShipAt(tilePos.x, tilePos.y, excludeShip);
+            if (ship) {
+                conflicts.set(ship.id, ship);
+            }
+        }
+
+        return [...conflicts.values()];
     }
 
     isOccupied(x, y) {
         return Boolean(this.getShipAt(x, y));
     }
 
+    getTileKey(x, y) {
+        return `${x},${y}`;
+    }
+
+    registerShipTiles(ship) {
+        if (!ship || ship.isDestroyed) return;
+
+        const keys = new Set();
+        for (const pos of ship.getOccupiedTiles()) {
+            const key = this.getTileKey(pos.x, pos.y);
+            keys.add(key);
+            if (!this.occupiedTiles.has(key)) {
+                this.occupiedTiles.set(key, new Set());
+            }
+            this.occupiedTiles.get(key).add(ship.id);
+        }
+
+        this.shipTileIndex.set(ship.id, keys);
+        this.shipById.set(ship.id, ship);
+    }
+
+    unregisterShipTiles(ship) {
+        if (!ship) return;
+
+        const keys = this.shipTileIndex.get(ship.id);
+        if (!keys) return;
+
+        for (const key of keys) {
+            const occupants = this.occupiedTiles.get(key);
+            if (!occupants) continue;
+            occupants.delete(ship.id);
+            if (occupants.size === 0) {
+                this.occupiedTiles.delete(key);
+            }
+        }
+
+        this.shipTileIndex.delete(ship.id);
+    }
+
+    refreshShipRegistration(ship) {
+        if (!ship) return;
+        this.unregisterShipTiles(ship);
+        if (!ship.isDestroyed) {
+            this.registerShipTiles(ship);
+        }
+    }
+
     getShipAt(x, y, excludeShip = null) {
-        return this.ships.find(ship => {
-            if (ship.isDestroyed || ship === excludeShip) return false;
-            return ship.getOccupiedTiles().some(pos => pos.x === x && pos.y === y);
-        }) || null;
+        if (!this.isValidPosition(x, y)) return null;
+
+        const key = this.getTileKey(x, y);
+        const occupants = this.occupiedTiles.get(key);
+        if (!occupants || occupants.size === 0) return null;
+
+        for (const shipId of [...occupants]) {
+            const ship = this.shipById.get(shipId);
+            if (!ship) {
+                occupants.delete(shipId);
+                continue;
+            }
+
+            if (ship.isDestroyed) {
+                this.unregisterShipTiles(ship);
+                continue;
+            }
+
+            if (ship === excludeShip) continue;
+
+            const stillOccupiesTile = ship.getOccupiedTiles().some(pos => pos.x === x && pos.y === y);
+            if (!stillOccupiesTile) {
+                this.refreshShipRegistration(ship);
+                continue;
+            }
+
+            return ship;
+        }
+
+        if (occupants.size === 0) {
+            this.occupiedTiles.delete(key);
+        }
+
+        return null;
     }
 
     addShip(ship) {
+        if (!ship) return;
         this.ships.push(ship);
+        this.shipById.set(ship.id, ship);
+        this.registerShipTiles(ship);
     }
 
     removeShip(ship) {
         const index = this.ships.indexOf(ship);
         if (index > -1) {
             this.ships.splice(index, 1);
+        }
+        this.unregisterShipTiles(ship);
+        if (ship) {
+            this.shipById.delete(ship.id);
         }
     }
 
@@ -214,7 +341,7 @@ export class GameMap {
         const lineTiles = this.getLineOfSightTiles(x1, y1, x2, y2);
 
         for (const pos of lineTiles) {
-            const tile = this.getTile(Math.floor(pos.x), Math.floor(pos.y));
+            const tile = this.getTile(pos.x, pos.y);
             if (tile && tile.isIsland()) {
                 return false;
             }
@@ -224,37 +351,34 @@ export class GameMap {
     }
 
     getLineOfSightTiles(x1, y1, x2, y2) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const maxDelta = Math.max(Math.abs(dx), Math.abs(dy));
+        const steps = Math.max(1, Math.ceil(maxDelta * 2));
+
+        const startTileX = Math.floor(x1);
+        const startTileY = Math.floor(y1);
+        const endTileX = Math.floor(x2);
+        const endTileY = Math.floor(y2);
+
         const tiles = [];
+        const seen = new Set();
 
-        let dx = Math.abs(x2 - x1);
-        let dy = Math.abs(y2 - y1);
-        const sx = x1 < x2 ? 1 : -1;
-        const sy = y1 < y2 ? 1 : -1;
-        let err = dx - dy;
+        for (let i = 1; i < steps; i++) {
+            const t = i / steps;
+            const sampleX = x1 + dx * t;
+            const sampleY = y1 + dy * t;
+            const tileX = Math.floor(sampleX);
+            const tileY = Math.floor(sampleY);
 
-        let x = x1;
-        let y = y1;
-
-        while (true) {
-            if ((x !== x1 || y !== y1) && (x !== x2 || y !== y2)) {
-                tiles.push({ x, y });
+            if ((tileX === startTileX && tileY === startTileY) || (tileX === endTileX && tileY === endTileY)) {
+                continue;
             }
 
-            if (Math.round(x) === Math.round(x2) && Math.round(y) === Math.round(y2)) {
-                break;
-            }
-
-            const e2 = 2 * err;
-
-            if (e2 > -dy) {
-                err -= dy;
-                x += sx;
-            }
-
-            if (e2 < dx) {
-                err += dx;
-                y += sy;
-            }
+            const key = `${tileX},${tileY}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            tiles.push({ x: tileX, y: tileY });
         }
 
         return tiles;

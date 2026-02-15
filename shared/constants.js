@@ -20,8 +20,19 @@ export const BOARD_LAYOUTS = {
 };
 
 export const CANVAS = {
-    WIDTH: GRID.WIDTH * GRID.TILE_SIZE,  // 1200px
-    HEIGHT: GRID.HEIGHT * GRID.TILE_SIZE  // 900px
+    getDimensions(layout = 'landscape') {
+        const board = BOARD_LAYOUTS[layout] || BOARD_LAYOUTS.landscape;
+        return {
+            width: board.width * GRID.TILE_SIZE,
+            height: board.height * GRID.TILE_SIZE
+        };
+    },
+    get WIDTH() {
+        return this.getDimensions('landscape').width;  // 1200px
+    },
+    get HEIGHT() {
+        return this.getDimensions('landscape').height; // 900px
+    }
 };
 
 export const TILE_TYPES = {

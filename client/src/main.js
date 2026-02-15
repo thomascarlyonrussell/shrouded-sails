@@ -270,6 +270,11 @@ class GameApp {
 
         if (!this.gameContainerEl) return;
 
+        const isPortraitMobile = window.matchMedia('(max-width: 768px) and (orientation: portrait)').matches;
+        if (isPortraitMobile) {
+            this.gameContainerEl.classList.add('is-header-collapsed', 'is-footer-collapsed');
+        }
+
         const syncToggleLabels = () => {
             const headerCollapsed = this.gameContainerEl.classList.contains('is-header-collapsed');
             const footerCollapsed = this.gameContainerEl.classList.contains('is-footer-collapsed');
