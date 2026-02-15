@@ -91,6 +91,11 @@ export const COLORS = {
     PLAYER2: '#2980b9',
     SELECTION: '#f1c40f',
     VALID_MOVE: 'rgba(52, 152, 219, 0.4)',
+    INVALID_MOVE: 'rgba(231, 76, 60, 0.35)',
+    MOVE_PREVIEW_VALID_FILL: 'rgba(52, 152, 219, 0.48)',
+    MOVE_PREVIEW_INVALID_FILL: 'rgba(231, 76, 60, 0.38)',
+    MOVE_PREVIEW_VALID_OUTLINE: 'rgba(124, 205, 255, 0.95)',
+    MOVE_PREVIEW_INVALID_OUTLINE: 'rgba(255, 150, 150, 0.95)',
     ATTACK_RANGE: 'rgba(231, 76, 60, 0.4)',
     GRID_LINE: '#2c5f8d'
 };

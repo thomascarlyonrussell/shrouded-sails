@@ -1,4 +1,9 @@
 import { ActionMenu } from '../ui/ActionMenu.js';
+import { ACTION_MODES } from '../../../shared/constants.js';
+
+const TOUCH_LONG_PRESS_MS = 500;
+const TOUCH_TAP_MAX_MS = 200;
+const TOUCH_MOVE_TOLERANCE_PX = 10;
 
 export class InputHandler {
     constructor(canvas, game, renderer) {
@@ -22,7 +27,10 @@ export class InputHandler {
             panning: false,
             lastX: 0,
             lastY: 0,
-            pinchDistance: null
+            pinchDistance: null,
+            longPressTimer: null,
+            longPressTriggered: false,
+            dragPreviewActive: false
         };
         this.mouseState = {
             active: false,
@@ -36,6 +44,7 @@ export class InputHandler {
 
         this.canvasClickHandler = (e) => this.handleCanvasClick(e);
         this.canvasHoverHandler = (e) => this.handleCanvasHover(e);
+        this.canvasLeaveHandler = () => this.game.clearMovementPreview();
         this.mouseDownHandler = (e) => this.handleMouseDown(e);
         this.mouseMoveHandler = (e) => this.handleMouseMove(e);
         this.mouseUpHandler = (e) => this.handleMouseUp(e);
@@ -57,6 +66,7 @@ export class InputHandler {
     setupEventListeners() {
         this.canvas.addEventListener('click', this.canvasClickHandler);
         this.canvas.addEventListener('mousemove', this.canvasHoverHandler);
+        this.canvas.addEventListener('mouseleave', this.canvasLeaveHandler);
         this.canvas.addEventListener('mousedown', this.mouseDownHandler);
         this.canvas.addEventListener('touchstart', this.touchStartHandler, { passive: false });
         this.canvas.addEventListener('touchmove', this.touchMoveHandler, { passive: false });
@@ -166,7 +176,14 @@ export class InputHandler {
 
     handleCanvasHover(event) {
         const point = this.getCanvasPoint(event.clientX, event.clientY);
-        this.renderer.screenToGrid(point.x, point.y);
+        const gridPos = this.renderer.screenToGrid(point.x, point.y);
+
+        if (this.mouseState.active && this.mouseState.panning) {
+            this.game.clearMovementPreview();
+            return;
+        }
+
+        this.game.updateMovementPreview(gridPos.x, gridPos.y, 'hover');
     }
 
     handleMouseDown(event) {
@@ -223,6 +240,8 @@ export class InputHandler {
     handleTouchStart(event) {
         event.preventDefault();
         if (event.touches.length === 2) {
+            this.clearLongPressTimer();
+            this.game.clearMovementPreview();
             this.renderer.cancelCameraTransition();
             const [a, b] = event.touches;
             this.touchState.pinchDistance = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
@@ -238,11 +257,16 @@ export class InputHandler {
         this.touchState.lastX = touch.clientX;
         this.touchState.lastY = touch.clientY;
         this.touchState.panning = false;
+        this.touchState.longPressTriggered = false;
+        this.touchState.dragPreviewActive = false;
+        this.setupLongPressTimer(touch.clientX, touch.clientY);
     }
 
     handleTouchMove(event) {
         event.preventDefault();
         if (event.touches.length === 2) {
+            this.clearLongPressTimer();
+            this.game.clearMovementPreview();
             this.renderer.cancelCameraTransition();
             const [a, b] = event.touches;
             const dist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
@@ -263,8 +287,19 @@ export class InputHandler {
         const dy = touch.clientY - this.touchState.lastY;
         const totalDx = touch.clientX - this.touchState.startX;
         const totalDy = touch.clientY - this.touchState.startY;
+        const totalDistance = Math.hypot(totalDx, totalDy);
 
-        if (Math.hypot(totalDx, totalDy) > 10) {
+        if (this.touchState.dragPreviewActive) {
+            const point = this.getCanvasPoint(touch.clientX, touch.clientY);
+            const gridPos = this.renderer.screenToGrid(point.x, point.y);
+            this.game.updateMovementPreview(gridPos.x, gridPos.y, 'drag');
+            this.touchState.lastX = touch.clientX;
+            this.touchState.lastY = touch.clientY;
+            return;
+        }
+
+        if (totalDistance > TOUCH_MOVE_TOLERANCE_PX) {
+            this.clearLongPressTimer();
             this.touchState.panning = true;
             if (this.renderer.camera.zoom > 1) {
                 this.renderer.cancelCameraTransition();
@@ -278,11 +313,23 @@ export class InputHandler {
     }
 
     handleTouchEnd(event) {
+        this.clearLongPressTimer();
+
+        if (event.touches.length === 0 && this.touchState.dragPreviewActive) {
+            const point = this.getCanvasPoint(this.touchState.lastX, this.touchState.lastY);
+            const gridPos = this.renderer.screenToGrid(point.x, point.y);
+            const moved = this.game.moveShip(gridPos.x, gridPos.y);
+            if (!moved) {
+                this.game.clearMovementPreview();
+            }
+            this.updateUI();
+        }
+
         if (event.touches.length === 0 && this.touchState.active) {
             const elapsed = performance.now() - this.touchState.startTime;
             const distance = Math.hypot(this.touchState.lastX - this.touchState.startX, this.touchState.lastY - this.touchState.startY);
 
-            if (!this.touchState.panning && elapsed < 200 && distance < 10) {
+            if (!this.touchState.longPressTriggered && !this.touchState.panning && elapsed < TOUCH_TAP_MAX_MS && distance < TOUCH_MOVE_TOLERANCE_PX) {
                 const point = this.getCanvasPoint(this.touchState.startX, this.touchState.startY);
                 const gridPos = this.renderer.screenToGrid(point.x, point.y);
                 if (this.game.map.isValidPosition(gridPos.x, gridPos.y)) {
@@ -293,7 +340,50 @@ export class InputHandler {
         }
 
         if (event.touches.length < 2) this.touchState.pinchDistance = null;
-        if (event.touches.length === 0) this.touchState.active = false;
+        if (event.touches.length === 0) {
+            this.touchState.active = false;
+            this.touchState.dragPreviewActive = false;
+            this.touchState.longPressTriggered = false;
+        }
+    }
+
+    clearLongPressTimer() {
+        if (this.touchState.longPressTimer) {
+            clearTimeout(this.touchState.longPressTimer);
+            this.touchState.longPressTimer = null;
+        }
+    }
+
+    isPointOnSelectedShip(clientX, clientY) {
+        const selectedShip = this.game.selectedShip;
+        if (!selectedShip || selectedShip.owner !== this.game.currentPlayer || selectedShip.isDestroyed) {
+            return false;
+        }
+
+        const point = this.getCanvasPoint(clientX, clientY);
+        const gridPos = this.renderer.screenToGrid(point.x, point.y);
+        return selectedShip.getOccupiedTiles().some(tile => tile.x === gridPos.x && tile.y === gridPos.y);
+    }
+
+    setupLongPressTimer(clientX, clientY) {
+        this.clearLongPressTimer();
+
+        this.touchState.longPressTimer = setTimeout(() => {
+            if (!this.touchState.active || this.touchState.panning) return;
+            if (!this.isPointOnSelectedShip(clientX, clientY)) return;
+
+            if (this.game.actionMode !== ACTION_MODES.MOVE && !this.game.enterMoveMode()) {
+                return;
+            }
+
+            this.touchState.longPressTriggered = true;
+            this.touchState.dragPreviewActive = true;
+
+            const point = this.getCanvasPoint(this.touchState.lastX, this.touchState.lastY);
+            const gridPos = this.renderer.screenToGrid(point.x, point.y);
+            this.game.updateMovementPreview(gridPos.x, gridPos.y, 'drag');
+            this.updateUI();
+        }, TOUCH_LONG_PRESS_MS);
     }
 
     handleKeyPress(event) {
@@ -362,6 +452,7 @@ export class InputHandler {
         if (this.canvas) {
             this.canvas.removeEventListener('click', this.canvasClickHandler);
             this.canvas.removeEventListener('mousemove', this.canvasHoverHandler);
+            this.canvas.removeEventListener('mouseleave', this.canvasLeaveHandler);
             this.canvas.removeEventListener('mousedown', this.mouseDownHandler);
             this.canvas.removeEventListener('touchstart', this.touchStartHandler);
             this.canvas.removeEventListener('touchmove', this.touchMoveHandler);
@@ -378,5 +469,6 @@ export class InputHandler {
         if (this.zoomOutBtnEl) this.zoomOutBtnEl.removeEventListener('click', this.zoomOutButtonHandler);
         if (this.zoomResetBtnEl) this.zoomResetBtnEl.removeEventListener('click', this.zoomResetButtonHandler);
         document.removeEventListener('keydown', this.keydownHandler);
+        this.clearLongPressTimer();
     }
 }

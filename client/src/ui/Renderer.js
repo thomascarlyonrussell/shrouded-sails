@@ -32,9 +32,11 @@ export class Renderer {
         this.drawMap();
         this.drawFogOverlay();  // Draw fog after terrain but before ships
         this.drawValidMoveHighlights();
+        this.drawMovementPreviewTiles();
         this.drawValidTargetHighlights();
         this.drawShips();
         this.drawGhostShips();  // Draw ghost ships after real ships
+        this.drawMovementPreviewShip();
         this.drawSelection();
         this.drawSelectedCapturedBadge();
         this.drawHoveredShipHighlight();
@@ -775,6 +777,74 @@ export class Renderer {
             this.ctx.fillStyle = COLORS.VALID_MOVE;
             this.ctx.fillRect(screenPos.x, screenPos.y, this.tileSize, this.tileSize);
         }
+    }
+
+    drawMovementPreviewTiles() {
+        if (this.game.actionMode !== 'move') return;
+
+        const preview = this.game.movementPreview;
+        if (!preview || !Array.isArray(preview.occupiedTiles)) return;
+
+        const fillColor = preview.isValid
+            ? COLORS.MOVE_PREVIEW_VALID_FILL
+            : COLORS.MOVE_PREVIEW_INVALID_FILL;
+        const outlineColor = preview.isValid
+            ? COLORS.MOVE_PREVIEW_VALID_OUTLINE
+            : COLORS.MOVE_PREVIEW_INVALID_OUTLINE;
+
+        for (const tile of preview.occupiedTiles) {
+            if (!this.gameMap.isValidPosition(tile.x, tile.y)) continue;
+            const screenPos = this.gridToScreen(tile.x, tile.y);
+            this.ctx.fillStyle = fillColor;
+            this.ctx.fillRect(screenPos.x, screenPos.y, this.tileSize, this.tileSize);
+
+            this.ctx.strokeStyle = outlineColor;
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(screenPos.x + 1, screenPos.y + 1, this.tileSize - 2, this.tileSize - 2);
+        }
+    }
+
+    drawMovementPreviewShip() {
+        if (this.game.actionMode !== 'move') return;
+
+        const preview = this.game.movementPreview;
+        if (!preview || !preview.ship) return;
+
+        const ship = preview.ship;
+        const bounds = this.getShipBounds(ship, preview.x, preview.y, preview.orientation);
+        const centerX = bounds.x + bounds.width / 2;
+        const centerY = bounds.y + bounds.height / 2;
+
+        const baseColor = ship.owner === 'player1' ? COLORS.PLAYER1 : COLORS.PLAYER2;
+        const outlineColor = preview.isValid
+            ? COLORS.MOVE_PREVIEW_VALID_OUTLINE
+            : COLORS.MOVE_PREVIEW_INVALID_OUTLINE;
+        const ghostColor = `${baseColor}88`;
+
+        let shipWidth = Math.min(bounds.width, bounds.height) * 0.6;
+        let shipHeight = Math.max(bounds.width, bounds.height) * 0.8;
+        if (ship.type === 2) {
+            shipWidth = bounds.width * 0.82;
+            shipHeight = bounds.height * 0.68;
+        }
+
+        this.ctx.save();
+        this.ctx.translate(centerX, centerY);
+        this.ctx.setLineDash([6, 4]);
+
+        if (ship.type === 1) {
+            this.drawSloop(ghostColor, shipWidth, shipHeight);
+        } else if (ship.type === 2) {
+            this.drawFrigate(ghostColor, shipWidth, shipHeight, preview.orientation);
+        } else if (ship.type === 3) {
+            this.drawFlagship(ghostColor, shipWidth, shipHeight);
+        }
+
+        this.ctx.strokeStyle = outlineColor;
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+        this.ctx.restore();
     }
 
     drawValidTargetHighlights() {

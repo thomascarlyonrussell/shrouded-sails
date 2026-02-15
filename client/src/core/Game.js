@@ -30,6 +30,7 @@ export class Game {
         this.actionMode = ACTION_MODES.NONE;
         this.validMovePositions = [];
         this.validTargets = [];
+        this.movementPreview = null;
     }
 
     setCombatEventHandler(handler) {
@@ -137,6 +138,7 @@ export class Game {
         this.actionMode = ACTION_MODES.NONE;
         this.validMovePositions = [];
         this.validTargets = [];
+        this.clearMovementPreview();
         if (this.audioManager) {
             this.audioManager.play('ship_select');
         }
@@ -154,6 +156,7 @@ export class Game {
         this.actionMode = ACTION_MODES.NONE;
         this.validMovePositions = [];
         this.validTargets = [];
+        this.clearMovementPreview();
     }
 
     enterMoveMode() {
@@ -166,8 +169,64 @@ export class Game {
 
         this.actionMode = ACTION_MODES.MOVE;
         this.validMovePositions = this.selectedShip.getValidMovePositions(this.map, this);
+        this.clearMovementPreview();
         console.log(`Move mode: ${this.validMovePositions.length} valid positions`);
         return true;
+    }
+
+    clearMovementPreview() {
+        this.movementPreview = null;
+    }
+
+    getMovePositionAt(x, y) {
+        return this.validMovePositions.find(pos => pos.x === x && pos.y === y) || null;
+    }
+
+    getPreviewOrientationFor(x, y, targetPos = null) {
+        if (!this.selectedShip) return 'horizontal';
+        if (this.selectedShip.type !== 2) {
+            return this.selectedShip.orientation;
+        }
+        if (targetPos?.orientation) {
+            return targetPos.orientation;
+        }
+
+        return this.getFrigateOrientationForStep(
+            this.selectedShip.x,
+            this.selectedShip.y,
+            x,
+            y,
+            this.selectedShip.orientation
+        );
+    }
+
+    updateMovementPreview(x, y, source = 'hover') {
+        if (this.actionMode !== ACTION_MODES.MOVE || !this.selectedShip) {
+            this.clearMovementPreview();
+            return null;
+        }
+
+        if (!this.map.isValidPosition(x, y)) {
+            this.clearMovementPreview();
+            return null;
+        }
+
+        const targetPos = this.getMovePositionAt(x, y);
+        const orientation = this.getPreviewOrientationFor(x, y, targetPos);
+        const occupiedTiles = this.selectedShip.getOccupiedTiles(x, y, orientation);
+        const isValid = Boolean(targetPos);
+
+        this.movementPreview = {
+            x,
+            y,
+            orientation,
+            occupiedTiles,
+            isValid,
+            source,
+            ship: this.selectedShip
+        };
+
+        return this.movementPreview;
     }
 
     enterAttackMode() {
@@ -343,6 +402,7 @@ export class Game {
             // Exit move mode
             this.actionMode = ACTION_MODES.NONE;
             this.validMovePositions = [];
+            this.clearMovementPreview();
             if (this.audioManager) {
                 this.audioManager.play('ship_move');
             }
@@ -375,6 +435,7 @@ export class Game {
         // Exit move mode
         this.actionMode = ACTION_MODES.NONE;
         this.validMovePositions = [];
+        this.clearMovementPreview();
         if (this.audioManager) {
             this.audioManager.play('ship_move');
         }

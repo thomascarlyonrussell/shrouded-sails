@@ -38,6 +38,12 @@ export class TutorialTour {
                 selectors: ['#gameCanvas']
             },
             {
+                id: 'movement-preview',
+                title: 'Move Ships with Full Preview',
+                body: 'Desktop: Select a ship, press Move, then hover tiles to preview every occupied cell (with orientation) before committing; blue preview is valid and red preview is invalid. Mobile: Long-press a selected ship for ~500ms to auto-enter drag move mode, drag the ghost footprint in real time, and release to place; invalid release snaps back and stays in move mode.',
+                selectors: ['#gameCanvas', '#moveBtn']
+            },
+            {
                 id: 'actions',
                 title: 'Use Action Buttons',
                 body: 'Move, Fire Cannons, Board Enemy, and End Turn are your primary controls each turn.',
