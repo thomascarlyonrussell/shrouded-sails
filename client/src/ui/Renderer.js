@@ -1,4 +1,5 @@
-import { GRID, CANVAS, COLORS } from '../../../shared/constants.js';
+import { GRID, COLORS } from '../../../shared/constants.js';
+import { Camera } from './Camera.js';
 
 export class Renderer {
     constructor(canvas, gameMap, game) {
@@ -10,10 +11,10 @@ export class Renderer {
         this.combatEffects = [];
         this.shakeUntil = 0;
         this.shakeIntensity = 0;
+        this.camera = new Camera();
 
-        // Set canvas size
-        this.canvas.width = CANVAS.WIDTH;
-        this.canvas.height = CANVAS.HEIGHT;
+        this.canvas.width = this.gameMap.width * this.tileSize;
+        this.canvas.height = this.gameMap.height * this.tileSize;
     }
 
     render(hoveredShip = null) {
@@ -22,7 +23,7 @@ export class Renderer {
 
         this.clear();
         this.ctx.save();
-        this.ctx.translate(shakeOffset.x, shakeOffset.y);
+        this.ctx.setTransform(this.camera.zoom, 0, 0, this.camera.zoom, this.camera.offsetX + shakeOffset.x, this.camera.offsetY + shakeOffset.y);
         this.drawMap();
         this.drawFogOverlay();  // Draw fog after terrain but before ships
         this.drawValidMoveHighlights();
@@ -257,7 +258,7 @@ export class Renderer {
 
         if (tile.isIsland()) {
             this.ctx.fillStyle = COLORS.ISLAND;
-            this.ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+            this.ctx.fillRect(screenX, screenY, width, height);
 
             // Add simple shading for islands
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
@@ -289,9 +290,10 @@ export class Renderer {
     }
 
     screenToGrid(screenX, screenY) {
+        const canvasPoint = this.camera.screenToCanvas(screenX, screenY);
         return {
-            x: Math.floor(screenX / this.tileSize),
-            y: Math.floor(screenY / this.tileSize)
+            x: Math.floor(canvasPoint.x / this.tileSize),
+            y: Math.floor(canvasPoint.y / this.tileSize)
         };
     }
 
@@ -299,6 +301,24 @@ export class Renderer {
         return {
             x: gridX * this.tileSize,
             y: gridY * this.tileSize
+        };
+    }
+
+
+    getShipBounds(ship, anchorX = ship.x, anchorY = ship.y, orientation = ship.orientation) {
+        const tiles = ship.getOccupiedTiles(anchorX, anchorY, orientation);
+        const xs = tiles.map(tile => tile.x);
+        const ys = tiles.map(tile => tile.y);
+        const minX = Math.min(...xs);
+        const minY = Math.min(...ys);
+        const maxX = Math.max(...xs);
+        const maxY = Math.max(...ys);
+
+        return {
+            x: minX * this.tileSize,
+            y: minY * this.tileSize,
+            width: (maxX - minX + 1) * this.tileSize,
+            height: (maxY - minY + 1) * this.tileSize
         };
     }
 
@@ -317,9 +337,9 @@ export class Renderer {
                 }
             }
 
-            const screenPos = this.gridToScreen(ship.x, ship.y);
-            const centerX = screenPos.x + this.tileSize / 2;
-            const centerY = screenPos.y + this.tileSize / 2;
+            const bounds = this.getShipBounds(ship);
+            const centerX = bounds.x + bounds.width / 2;
+            const centerY = bounds.y + bounds.height / 2;
 
             // Determine ship color
             let shipColor = ship.owner === 'player1' ? COLORS.PLAYER1 : COLORS.PLAYER2;
@@ -330,8 +350,8 @@ export class Renderer {
             }
 
             // Draw ship as a triangle (pointing up by default)
-            const shipSize = this.tileSize * 0.6;
-            const shipHeight = shipSize * 1.2;
+            const shipSize = Math.min(bounds.width, bounds.height) * 0.6;
+            const shipHeight = Math.max(bounds.width, bounds.height) * 0.8;
 
             this.ctx.save();
             this.ctx.translate(centerX, centerY);
@@ -376,20 +396,20 @@ export class Renderer {
             this.ctx.restore();
 
             // Draw HP bar
-            this.drawHPBar(ship, screenPos.x, screenPos.y);
+            this.drawHPBar(ship, bounds.x, bounds.y, bounds.width, bounds.height);
 
             // Draw captured indicator
             if (ship.isCaptured) {
-                this.drawCapturedIndicator(screenPos.x, screenPos.y);
+                this.drawCapturedIndicator(bounds.x, bounds.y, bounds.width);
             }
 
             // Draw action indicators only for the current player's ships
             if (ship.owner === this.game.currentPlayer) {
-                this.drawActionIndicators(ship, screenPos.x, screenPos.y);
+                this.drawActionIndicators(ship, bounds.x, bounds.y);
 
                 // Draw dim overlay if ship has completed all actions
                 if (ship.isDone()) {
-                    this.drawCompletedOverlay(screenPos.x, screenPos.y);
+                    this.drawCompletedOverlay(bounds.x, bounds.y, bounds.width, bounds.height);
                 }
             }
         }
@@ -405,8 +425,8 @@ export class Renderer {
         return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
     }
 
-    drawCapturedIndicator(screenX, screenY) {
-        const x = screenX + this.tileSize - 15;
+    drawCapturedIndicator(screenX, screenY, width = this.tileSize) {
+        const x = screenX + width - 15;
         const y = screenY + 5;
 
         this.ctx.fillStyle = '#f1c40f';
@@ -471,14 +491,14 @@ export class Renderer {
         }
     }
 
-    drawCompletedOverlay(screenX, screenY) {
+    drawCompletedOverlay(screenX, screenY, width = this.tileSize, height = this.tileSize) {
         // Draw semi-transparent dark overlay to show ship has completed all actions
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-        this.ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+        this.ctx.fillRect(screenX, screenY, width, height);
 
         // Draw "DONE" text
-        const centerX = screenX + this.tileSize / 2;
-        const centerY = screenY + this.tileSize / 2;
+        const centerX = screenX + width / 2;
+        const centerY = screenY + height / 2;
 
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
         this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
@@ -487,15 +507,15 @@ export class Renderer {
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'bottom';
 
-        this.ctx.strokeText('DONE', centerX, screenY + this.tileSize - 12);
-        this.ctx.fillText('DONE', centerX, screenY + this.tileSize - 12);
+        this.ctx.strokeText('DONE', centerX, screenY + height - 12);
+        this.ctx.fillText('DONE', centerX, screenY + height - 12);
     }
 
-    drawHPBar(ship, screenX, screenY) {
-        const barWidth = this.tileSize * 0.7;
+    drawHPBar(ship, screenX, screenY, width = this.tileSize, height = this.tileSize) {
+        const barWidth = width * 0.7;
         const barHeight = 5;
-        const barX = screenX + (this.tileSize - barWidth) / 2;
-        const barY = screenY + this.tileSize - barHeight - 3;
+        const barX = screenX + (width - barWidth) / 2;
+        const barY = screenY + height - barHeight - 3;
 
         // Background (red)
         this.ctx.fillStyle = '#e74c3c';
@@ -516,12 +536,12 @@ export class Renderer {
         if (!this.game.selectedShip) return;
 
         const ship = this.game.selectedShip;
-        const screenPos = this.gridToScreen(ship.x, ship.y);
+        const bounds = this.getShipBounds(ship);
 
         // Draw yellow outline
         this.ctx.strokeStyle = COLORS.SELECTION;
         this.ctx.lineWidth = 4;
-        this.ctx.strokeRect(screenPos.x + 2, screenPos.y + 2, this.tileSize - 4, this.tileSize - 4);
+        this.ctx.strokeRect(bounds.x + 2, bounds.y + 2, bounds.width - 4, bounds.height - 4);
 
         // Draw corner brackets
         const bracketSize = 10;
@@ -529,30 +549,30 @@ export class Renderer {
 
         // Top-left
         this.ctx.beginPath();
-        this.ctx.moveTo(screenPos.x + 2, screenPos.y + bracketSize);
-        this.ctx.lineTo(screenPos.x + 2, screenPos.y + 2);
-        this.ctx.lineTo(screenPos.x + bracketSize, screenPos.y + 2);
+        this.ctx.moveTo(bounds.x + 2, bounds.y + bracketSize);
+        this.ctx.lineTo(bounds.x + 2, bounds.y + 2);
+        this.ctx.lineTo(bounds.x + bracketSize, bounds.y + 2);
         this.ctx.stroke();
 
         // Top-right
         this.ctx.beginPath();
-        this.ctx.moveTo(screenPos.x + this.tileSize - bracketSize, screenPos.y + 2);
-        this.ctx.lineTo(screenPos.x + this.tileSize - 2, screenPos.y + 2);
-        this.ctx.lineTo(screenPos.x + this.tileSize - 2, screenPos.y + bracketSize);
+        this.ctx.moveTo(bounds.x + bounds.width - bracketSize, bounds.y + 2);
+        this.ctx.lineTo(bounds.x + bounds.width - 2, bounds.y + 2);
+        this.ctx.lineTo(bounds.x + bounds.width - 2, bounds.y + bracketSize);
         this.ctx.stroke();
 
         // Bottom-left
         this.ctx.beginPath();
-        this.ctx.moveTo(screenPos.x + 2, screenPos.y + this.tileSize - bracketSize);
-        this.ctx.lineTo(screenPos.x + 2, screenPos.y + this.tileSize - 2);
-        this.ctx.lineTo(screenPos.x + bracketSize, screenPos.y + this.tileSize - 2);
+        this.ctx.moveTo(bounds.x + 2, bounds.y + bounds.height - bracketSize);
+        this.ctx.lineTo(bounds.x + 2, bounds.y + bounds.height - 2);
+        this.ctx.lineTo(bounds.x + bracketSize, bounds.y + bounds.height - 2);
         this.ctx.stroke();
 
         // Bottom-right
         this.ctx.beginPath();
-        this.ctx.moveTo(screenPos.x + this.tileSize - bracketSize, screenPos.y + this.tileSize - 2);
-        this.ctx.lineTo(screenPos.x + this.tileSize - 2, screenPos.y + this.tileSize - 2);
-        this.ctx.lineTo(screenPos.x + this.tileSize - 2, screenPos.y + this.tileSize - bracketSize);
+        this.ctx.moveTo(bounds.x + bounds.width - bracketSize, bounds.y + bounds.height - 2);
+        this.ctx.lineTo(bounds.x + bounds.width - 2, bounds.y + bounds.height - 2);
+        this.ctx.lineTo(bounds.x + bounds.width - 2, bounds.y + bounds.height - bracketSize);
         this.ctx.stroke();
     }
 
@@ -560,7 +580,7 @@ export class Renderer {
         const ship = this.game.selectedShip;
         if (!ship || !ship.isCaptured || ship.isDestroyed) return;
 
-        const screenPos = this.gridToScreen(ship.x, ship.y);
+        const bounds = this.getShipBounds(ship);
         const badgeX = screenPos.x + this.tileSize / 2;
         const badgeY = Math.max(14, screenPos.y - 8);
 
@@ -599,19 +619,19 @@ export class Renderer {
             }
         }
 
-        const screenPos = this.gridToScreen(ship.x, ship.y);
+        const bounds = this.getShipBounds(ship);
 
         // Draw cyan glow outline for hovered ship from panel
         this.ctx.strokeStyle = '#00ffff';
         this.ctx.lineWidth = 3;
         this.ctx.setLineDash([5, 3]);
-        this.ctx.strokeRect(screenPos.x + 3, screenPos.y + 3, this.tileSize - 6, this.tileSize - 6);
+        this.ctx.strokeRect(bounds.x + 3, bounds.y + 3, bounds.width - 6, bounds.height - 6);
         this.ctx.setLineDash([]);
 
         // Add a subtle glow effect
         this.ctx.shadowColor = '#00ffff';
         this.ctx.shadowBlur = 10;
-        this.ctx.strokeRect(screenPos.x + 3, screenPos.y + 3, this.tileSize - 6, this.tileSize - 6);
+        this.ctx.strokeRect(bounds.x + 3, bounds.y + 3, bounds.width - 6, bounds.height - 6);
         this.ctx.shadowBlur = 0;
     }
 
@@ -629,9 +649,9 @@ export class Renderer {
         if (this.game.actionMode !== 'attack' && this.game.actionMode !== 'board') return;
 
         for (const target of this.game.validTargets) {
-            const screenPos = this.gridToScreen(target.x, target.y);
+            const bounds = this.getShipBounds(target);
             this.ctx.fillStyle = COLORS.ATTACK_RANGE;
-            this.ctx.fillRect(screenPos.x, screenPos.y, this.tileSize, this.tileSize);
+            this.ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
         }
     }
 
@@ -799,7 +819,7 @@ export class Renderer {
                     // Draw fog on this tile
                     const screenX = x * this.tileSize;
                     const screenY = y * this.tileSize;
-                    this.ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+                    this.ctx.fillRect(screenX, screenY, width, height);
                 }
             }
         }
@@ -816,13 +836,14 @@ export class Renderer {
             if (this.game.fogOfWar.isShipVisible(ghostData.ship, this.game.currentPlayer)) {
                 continue;
             }
-            this.drawGhostShip(ghostData.ship, ghostData.lastX, ghostData.lastY);
+            this.drawGhostShip(ghostData.ship, ghostData.lastX, ghostData.lastY, ghostData.orientation);
         }
     }
 
-    drawGhostShip(ship, lastX, lastY) {
-        const screenX = lastX * this.tileSize + this.tileSize / 2;
-        const screenY = lastY * this.tileSize + this.tileSize / 2;
+    drawGhostShip(ship, lastX, lastY, orientation = ship.orientation) {
+        const bounds = this.getShipBounds(ship, lastX, lastY, orientation);
+        const screenX = bounds.x + bounds.width / 2;
+        const screenY = bounds.y + bounds.height / 2;
 
         this.ctx.save();
         this.ctx.translate(screenX, screenY);

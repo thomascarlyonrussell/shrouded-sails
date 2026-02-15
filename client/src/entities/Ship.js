@@ -1,13 +1,14 @@
 import { SHIP_TYPES } from '../../../shared/constants.js';
 
 export class Ship {
-    constructor(type, owner, x, y) {
+    constructor(type, owner, x, y, orientation = 'horizontal') {
         this.id = this.generateId();
         this.type = type;
         this.owner = owner;
         this.originalOwner = owner;
         this.x = x;
         this.y = y;
+        this.orientation = orientation;
 
         // Get stats from ship type
         const stats = SHIP_TYPES[type];
@@ -18,6 +19,7 @@ export class Ship {
         this.remainingMovement = this.maxMovement;
         this.cannons = stats.cannons;
         this.range = stats.range;
+        this.footprint = stats.footprint || { width: 1, height: 1 };
 
         // Action flags
         this.hasFired = false;
@@ -92,6 +94,15 @@ export class Ship {
     moveTo(x, y) {
         const distance = Math.abs(this.x - x) + Math.abs(this.y - y);
         if (distance <= this.remainingMovement) {
+            const dx = x - this.x;
+            const dy = y - this.y;
+            if (this.type === 2) {
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    this.orientation = 'horizontal';
+                } else if (Math.abs(dy) > Math.abs(dx)) {
+                    this.orientation = 'vertical';
+                }
+            }
             this.x = x;
             this.y = y;
             this.remainingMovement -= distance;
@@ -101,15 +112,46 @@ export class Ship {
         return false;
     }
 
+    getOccupiedTiles(anchorX = this.x, anchorY = this.y, orientation = this.orientation) {
+        const occupied = [];
+        const baseFootprint = this.footprint || { width: 1, height: 1 };
+        const orientedFootprint = this.type === 2 && orientation === 'vertical'
+            ? { width: baseFootprint.height, height: baseFootprint.width }
+            : baseFootprint;
+
+        for (let y = 0; y < orientedFootprint.height; y++) {
+            for (let x = 0; x < orientedFootprint.width; x++) {
+                occupied.push({ x: anchorX + x, y: anchorY + y });
+            }
+        }
+
+        return occupied;
+    }
+
+    getCenterPoint(anchorX = this.x, anchorY = this.y, orientation = this.orientation) {
+        const occupied = this.getOccupiedTiles(anchorX, anchorY, orientation);
+        const xValues = occupied.map(pos => pos.x);
+        const yValues = occupied.map(pos => pos.y);
+        const minX = Math.min(...xValues);
+        const maxX = Math.max(...xValues);
+        const minY = Math.min(...yValues);
+        const maxY = Math.max(...yValues);
+
+        return {
+            x: (minX + maxX) / 2,
+            y: (minY + maxY) / 2
+        };
+    }
+
     getValidMovePositions(gameMap, game = null) {
         // Use BFS (Breadth-First Search) to find all reachable positions
         // This ensures ships can't move through islands
         const positions = [];
         const maxDist = this.remainingMovement;
         const visited = new Set();
-        const queue = [{ x: this.x, y: this.y, dist: 0 }];
+        const queue = [{ x: this.x, y: this.y, dist: 0, orientation: this.orientation }];
 
-        visited.add(`${this.x},${this.y}`);
+        visited.add(`${this.x},${this.y},${this.orientation}`);
 
         while (queue.length > 0) {
             const current = queue.shift();
@@ -123,40 +165,28 @@ export class Ship {
             ];
 
             for (const neighbor of neighbors) {
-                const key = `${neighbor.x},${neighbor.y}`;
+                let nextOrientation = current.orientation;
+                if (this.type === 2) {
+                    if (neighbor.x !== current.x) nextOrientation = 'horizontal';
+                    else if (neighbor.y !== current.y) nextOrientation = 'vertical';
+                }
+
+                const key = `${neighbor.x},${neighbor.y},${nextOrientation}`;
 
                 // Skip if already visited
                 if (visited.has(key)) continue;
 
                 // Skip if out of bounds
-                if (!gameMap.isValidPosition(neighbor.x, neighbor.y)) continue;
-
-                // Skip if it's an island
-                const tile = gameMap.getTile(neighbor.x, neighbor.y);
-                if (tile.isIsland()) continue;
-
-                // Check if tile is occupied - but with fog of war consideration
-                const occupyingShip = gameMap.getShipAt(neighbor.x, neighbor.y);
-                if (occupyingShip) {
-                    // Always block friendly ships
-                    if (occupyingShip.owner === this.owner) continue;
-
-                    // For enemy ships: only block if visible (fog of war enabled)
-                    if (game && game.fogOfWar) {
-                        const isVisible = game.fogOfWar.isShipVisible(occupyingShip, this.owner);
-                        console.log(`[FOG] Enemy ship at (${neighbor.x},${neighbor.y}): visible=${isVisible}`);
-                        // Only block if the enemy ship is visible
-                        if (isVisible) {
-                            console.log(`[FOG] Blocking visible enemy ship at (${neighbor.x},${neighbor.y})`);
-                            continue;
-                        }
-                        // If not visible, allow movement (collision will be handled later)
-                        console.log(`[FOG] Allowing move to unseen enemy at (${neighbor.x},${neighbor.y})`);
-                    } else {
-                        // No fog of war - block all enemy ships
-                        continue;
-                    }
-                }
+                const footprintCheck = gameMap.isFootprintClear(
+                    neighbor.x,
+                    neighbor.y,
+                    this.footprint,
+                    nextOrientation,
+                    this,
+                    game,
+                    this.owner
+                );
+                if (!footprintCheck.clear) continue;
 
                 // Calculate distance from start
                 const newDist = current.dist + 1;
@@ -169,11 +199,11 @@ export class Ship {
 
                 // Add to valid positions (exclude starting position)
                 if (neighbor.x !== this.x || neighbor.y !== this.y) {
-                    positions.push({ x: neighbor.x, y: neighbor.y });
+                    positions.push({ x: neighbor.x, y: neighbor.y, orientation: nextOrientation });
                 }
 
                 // Add to queue for further exploration
-                queue.push({ x: neighbor.x, y: neighbor.y, dist: newDist });
+                queue.push({ x: neighbor.x, y: neighbor.y, dist: newDist, orientation: nextOrientation });
             }
         }
 
@@ -193,10 +223,12 @@ export class Ship {
                 }
             }
 
-            const distance = gameMap.getDistance(this.x, this.y, enemy.x, enemy.y);
+            const attackerCenter = this.getCenterPoint();
+            const targetCenter = enemy.getCenterPoint();
+            const distance = gameMap.getDistance(attackerCenter.x, attackerCenter.y, targetCenter.x, targetCenter.y);
             if (distance >= 1 && distance <= this.range) {
                 // Check line of sight - can't shoot through islands
-                if (gameMap.hasLineOfSight(this.x, this.y, enemy.x, enemy.y)) {
+                if (gameMap.hasLineOfSight(attackerCenter.x, attackerCenter.y, targetCenter.x, targetCenter.y)) {
                     targets.push(enemy);
                 }
             }
@@ -221,8 +253,18 @@ export class Ship {
             // Ships can only board vessels of a lower level
             if (this.type <= enemy.type) continue;
 
-            const distance = gameMap.getDistance(this.x, this.y, enemy.x, enemy.y);
-            if (distance === 1) {
+            const sourceTiles = this.getOccupiedTiles();
+            const targetTiles = enemy.getOccupiedTiles();
+            let minDistance = Infinity;
+
+            for (const source of sourceTiles) {
+                for (const target of targetTiles) {
+                    const distance = gameMap.getDistance(source.x, source.y, target.x, target.y);
+                    minDistance = Math.min(minDistance, distance);
+                }
+            }
+
+            if (minDistance === 1) {
                 targets.push(enemy);
             }
         }

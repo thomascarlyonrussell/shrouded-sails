@@ -42,6 +42,7 @@ class GameApp {
         return {
             fogEnabled: true,
             combatDetailLevel: 'detailed',
+            boardLayout: 'landscape',
             audio: { masterVolume: 70, effectsVolume: 80, uiVolume: 70, muted: false }
         };
     }
@@ -59,7 +60,9 @@ class GameApp {
         this.lastConfirmedSettings = this.cloneSettings(resolvedSettings);
 
         // Create game
-        this.game = new Game();
+        const boardLayout = resolvedSettings?.boardLayout === 'portrait' ? 'portrait' : 'landscape';
+        this.game = new Game(boardLayout);
+        this.canvas.dataset.layout = boardLayout;
         this.game.setAudioManager(this.audioManager);
 
         // Apply settings if provided

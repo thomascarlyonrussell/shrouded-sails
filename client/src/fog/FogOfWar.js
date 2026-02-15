@@ -1,7 +1,6 @@
 export class FogOfWar {
     constructor(game) {
         this.game = game;
-        // viewingPlayer -> (shipId -> {x, y, ship})
         this.lastKnownPositionsByPlayer = new Map();
     }
 
@@ -19,23 +18,20 @@ export class FogOfWar {
         for (const ship of ships) {
             if (ship.isDestroyed) continue;
 
+            const center = ship.getCenterPoint();
             const visionRange = ship.getVisionRange();
 
-            // Use Manhattan distance to calculate vision coverage
             for (let dx = -visionRange; dx <= visionRange; dx++) {
                 for (let dy = -visionRange; dy <= visionRange; dy++) {
                     const distance = Math.abs(dx) + Math.abs(dy);
+                    if (distance > visionRange) continue;
 
-                    if (distance <= visionRange) {
-                        const tileX = ship.x + dx;
-                        const tileY = ship.y + dy;
+                    const tileX = Math.floor(center.x + dx);
+                    const tileY = Math.floor(center.y + dy);
 
-                        // Check if position is valid on map
-                        if (this.game.map.isValidPosition(tileX, tileY)) {
-                            // Check line of sight - islands block vision
-                            if (this.game.map.hasLineOfSight(ship.x, ship.y, tileX, tileY)) {
-                                visibleTiles.add(`${tileX},${tileY}`);
-                            }
+                    if (this.game.map.isValidPosition(tileX, tileY)) {
+                        if (this.game.map.hasLineOfSight(center.x, center.y, tileX, tileY)) {
+                            visibleTiles.add(`${tileX},${tileY}`);
                         }
                     }
                 }
@@ -46,23 +42,20 @@ export class FogOfWar {
     }
 
     isShipVisible(ship, viewingPlayer) {
-        // Friendly ships are always visible to their owner
-        if (ship.owner === viewingPlayer) {
-            return true;
-        }
+        if (ship.owner === viewingPlayer) return true;
 
-        // Enemy ships - check if within vision range of any friendly ship
         const friendlyShips = this.game.getShipsByOwner(viewingPlayer, false);
+        const enemyCenter = ship.getCenterPoint();
 
         for (const friendlyShip of friendlyShips) {
             if (friendlyShip.isDestroyed) continue;
 
+            const friendlyCenter = friendlyShip.getCenterPoint();
             const visionRange = friendlyShip.getVisionRange();
-            const distance = Math.abs(friendlyShip.x - ship.x) + Math.abs(friendlyShip.y - ship.y);
+            const distance = Math.abs(friendlyCenter.x - enemyCenter.x) + Math.abs(friendlyCenter.y - enemyCenter.y);
 
             if (distance <= visionRange) {
-                // Check line of sight
-                if (this.game.map.hasLineOfSight(friendlyShip.x, friendlyShip.y, ship.x, ship.y)) {
+                if (this.game.map.hasLineOfSight(friendlyCenter.x, friendlyCenter.y, enemyCenter.x, enemyCenter.y)) {
                     return true;
                 }
             }
@@ -81,18 +74,15 @@ export class FogOfWar {
         const enemyShips = this.game.getEnemyShipsFor(viewingPlayer, false);
 
         for (const enemyShip of enemyShips) {
-            if (enemyShip.isDestroyed) {
-                // Don't track destroyed ships
-                continue;
-            }
+            if (enemyShip.isDestroyed) continue;
 
-            // Check if this enemy ship is currently visible
             if (this.isShipVisible(enemyShip, viewingPlayer)) {
-                // Update last known position
                 playerGhostMap.set(enemyShip.id, {
                     x: enemyShip.x,
                     y: enemyShip.y,
-                    ship: enemyShip
+                    ship: enemyShip,
+                    type: enemyShip.type,
+                    orientation: enemyShip.orientation
                 });
             }
         }
@@ -102,26 +92,17 @@ export class FogOfWar {
         const ghostShips = [];
         const playerGhostMap = this.getPlayerGhostMap(viewingPlayer);
 
-        for (const [shipId, lastKnown] of playerGhostMap.entries()) {
+        for (const [, lastKnown] of playerGhostMap.entries()) {
             const ship = lastKnown.ship;
+            if (ship.isDestroyed || ship.owner === viewingPlayer) continue;
 
-            // Skip if ship is destroyed
-            if (ship.isDestroyed) {
-                continue;
-            }
-
-            // Defensive guard: ghosts should only represent enemy ships
-            if (ship.owner === viewingPlayer) {
-                continue;
-            }
-
-            // Only include ghosts for ships currently outside vision
             if (!this.isShipVisible(ship, viewingPlayer)) {
-                // Ship is not visible, so it's a ghost
                 ghostShips.push({
-                    ship: ship,
+                    ship,
                     lastX: lastKnown.x,
-                    lastY: lastKnown.y
+                    lastY: lastKnown.y,
+                    type: lastKnown.type,
+                    orientation: lastKnown.orientation
                 });
             }
         }

@@ -9,9 +9,10 @@ import { HUD } from '../ui/HUD.js';
 import { FogOfWar } from '../fog/FogOfWar.js';
 
 export class Game {
-    constructor() {
+    constructor(boardLayout = 'landscape') {
         this.gameState = GAME_STATES.SETUP;
         this.map = null;
+        this.boardLayout = boardLayout;
         this.fleets = {};
         this.currentPlayer = PLAYERS.PLAYER1;
         this.turnNumber = 1;
@@ -45,7 +46,7 @@ export class Game {
         console.log('Initializing game...');
 
         // Create map
-        this.map = new GameMap();
+        this.map = new GameMap(this.boardLayout);
 
         // Create wind system
         this.wind = new Wind();
@@ -196,7 +197,7 @@ export class Game {
             const adjacentVisibleEnemies = enemyShips.filter(enemy => {
                 if (enemy.isDestroyed) return false;
                 if (this.fogOfWar && !this.fogOfWar.isShipVisible(enemy, this.currentPlayer)) return false;
-                return this.map.getDistance(this.selectedShip.x, this.selectedShip.y, enemy.x, enemy.y) === 1;
+                return this.selectedShip.getBoardableTargets(this.map, [enemy]).length > 0;
             });
 
             if (adjacentVisibleEnemies.length > 0) {
@@ -232,8 +233,8 @@ export class Game {
     isBoardingBlockedByLevel(attacker, target) {
         if (!attacker || !target) return false;
         if (target.owner === attacker.owner) return false;
-        const distance = this.map.getDistance(attacker.x, attacker.y, target.x, target.y);
-        return distance === 1 && attacker.type <= target.type;
+        const isAdjacent = attacker.getBoardableTargets(this.map, [target]).length > 0;
+        return isAdjacent && attacker.type <= target.type;
     }
 
     logBoardingBlockedByLevel(attacker, target) {
@@ -276,7 +277,7 @@ export class Game {
         }
 
         // Check for unseen enemy ship collision
-        const shipAtDestination = this.map.getShipAt(x, y);
+        const shipAtDestination = this.map.getShipAt(x, y, this.selectedShip);
         if (shipAtDestination && shipAtDestination.owner !== this.selectedShip.owner) {
             // There's an enemy ship at destination - check if it's visible
             const isVisible = this.fogOfWar
@@ -321,6 +322,10 @@ export class Game {
 
         // Normal move (no collision)
         const distance = Math.abs(this.selectedShip.x - x) + Math.abs(this.selectedShip.y - y);
+        if (this.selectedShip.type === 2 && this.validMovePositions) {
+            const targetPos = this.validMovePositions.find(pos => pos.x === x && pos.y === y);
+            if (targetPos?.orientation) this.selectedShip.orientation = targetPos.orientation;
+        }
         this.selectedShip.moveTo(x, y);
 
         console.log(`Ship moved ${distance} spaces to (${x}, ${y})`);
@@ -351,15 +356,17 @@ export class Game {
             // Check if position is valid
             if (!this.map.isValidPosition(pos.x, pos.y)) continue;
 
-            // Check if it's water
-            const tile = this.map.getTile(pos.x, pos.y);
-            if (tile.isIsland()) continue;
+            const check = this.map.isFootprintClear(
+                pos.x,
+                pos.y,
+                movingShip.footprint,
+                movingShip.orientation,
+                movingShip,
+                this,
+                movingShip.owner
+            );
+            if (!check.clear) continue;
 
-            // Check if it's not occupied (or occupied by the moving ship's original position)
-            const occupyingShip = this.map.getShipAt(pos.x, pos.y);
-            if (occupyingShip && occupyingShip !== movingShip) continue;
-
-            // This tile is valid
             return pos;
         }
 
@@ -430,11 +437,13 @@ export class Game {
             return false;
         }
 
+        const attackerCenter = this.selectedShip.getCenterPoint();
+        const targetCenter = target.getCenterPoint();
         const distance = this.map.getDistance(
-            this.selectedShip.x,
-            this.selectedShip.y,
-            target.x,
-            target.y
+            attackerCenter.x,
+            attackerCenter.y,
+            targetCenter.x,
+            targetCenter.y
         );
 
         // Resolve combat
