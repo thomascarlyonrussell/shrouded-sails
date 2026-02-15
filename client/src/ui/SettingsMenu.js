@@ -5,6 +5,7 @@ export class SettingsMenu {
         this.audioManager = audioManager;
         this.defaultSettings = {
             fogEnabled: true,  // Default to enabled
+            boardLayout: 'landscape',
             combatDetailLevel: 'detailed',
             audio: {
                 masterVolume: 70,
@@ -28,6 +29,7 @@ export class SettingsMenu {
         this.effectsVolumeValue = null;
         this.uiVolumeValue = null;
         this.musicVolumeValue = null;
+        this.boardLayoutSelect = null;
         this.startGameBtn = null;
         this.startTutorialBtn = null;
 
@@ -61,6 +63,7 @@ export class SettingsMenu {
         merged.audio.muted = Boolean(merged.audio.muted);
         merged.combatDetailLevel = merged.combatDetailLevel === 'compact' ? 'compact' : 'detailed';
         merged.fogEnabled = Boolean(merged.fogEnabled);
+        merged.boardLayout = merged.boardLayout === 'portrait' ? 'portrait' : 'landscape';
 
         return merged;
     }
@@ -105,6 +108,7 @@ export class SettingsMenu {
         this.menuElement = document.getElementById('settingsModal');
         this.fogCheckbox = document.getElementById('fogOfWarCheckbox');
         this.combatDetailSelect = document.getElementById('combatDetailLevelSelect');
+        this.boardLayoutSelect = document.getElementById('boardLayoutSelect');
         this.muteAllCheckbox = document.getElementById('muteAllCheckbox');
         this.masterVolumeSlider = document.getElementById('masterVolumeSlider');
         this.effectsVolumeSlider = document.getElementById('effectsVolumeSlider');
@@ -126,6 +130,12 @@ export class SettingsMenu {
         this.fogCheckbox.checked = this.settings.fogEnabled;
         if (this.combatDetailSelect) {
             this.combatDetailSelect.value = this.settings.combatDetailLevel;
+        }
+        if (this.boardLayoutSelect) {
+            if (!localStorage.getItem(this.storageKey)) {
+                this.settings.boardLayout = window.innerWidth >= window.innerHeight ? 'landscape' : 'portrait';
+            }
+            this.boardLayoutSelect.value = this.settings.boardLayout;
         }
         if (this.muteAllCheckbox) {
             this.muteAllCheckbox.checked = this.settings.audio.muted;
@@ -157,6 +167,13 @@ export class SettingsMenu {
                 const nextLevel = e.target.value === 'compact' ? 'compact' : 'detailed';
                 this.settings.combatDetailLevel = nextLevel;
                 console.log(`Combat Report Detail: ${nextLevel}`);
+                this.saveSettings();
+            });
+        }
+
+        if (this.boardLayoutSelect) {
+            this.boardLayoutSelect.addEventListener('change', (e) => {
+                this.settings.boardLayout = e.target.value === 'portrait' ? 'portrait' : 'landscape';
                 this.saveSettings();
             });
         }

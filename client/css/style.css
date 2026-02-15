@@ -207,6 +207,11 @@ body.startup-overlay-active .game-container {
     box-shadow: 0 0 20px rgba(52, 152, 219, 0.3);
 }
 
+#gameCanvas[data-layout="portrait"] {
+    aspect-ratio: 3 / 4;
+    width: min(100%, calc((100vh - 380px) * 3 / 4), 900px);
+}
+
 .game-footer {
     background: #1e2836;
     padding: 22px 20px 15px;
@@ -1139,11 +1144,23 @@ body.startup-overlay-active .game-container {
     }
 
     #gameCanvas {
-        aspect-ratio: 4 / 3;
-        width: 100%;
+        width: auto;
         height: auto;
         max-width: 100%;
-        max-height: none;
+        max-height: 100%;
+        margin-bottom: 0;
+    }
+
+    #gameCanvas[data-layout="landscape"] {
+        aspect-ratio: 4 / 3;
+        width: auto;
+        height: auto;
+    }
+
+    #gameCanvas[data-layout="portrait"] {
+        aspect-ratio: 3 / 4;
+        width: auto;
+        height: auto;
     }
 
     .game-container.is-header-collapsed .game-header {

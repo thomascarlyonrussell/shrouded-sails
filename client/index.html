@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shrouded Sails</title>
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="./css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -149,7 +150,7 @@
                     </label>
                     <p class="setting-description">
                         Enable tactical mode with limited visibility. Enemy ships are only visible within your fleet's vision range.
-                        Larger ships have better vision (Flagship=4, Frigate=3, Sloop=2).
+                        Vision ranges are scaled for the fine grid (Sloop=8, Frigate=6, Flagship=4).
                     </p>
                 </div>
                 <div class="setting-item">
@@ -162,6 +163,18 @@
                     <select id="combatDetailLevelSelect" class="setting-select">
                         <option value="detailed" selected>Detailed</option>
                         <option value="compact">Compact</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="boardLayoutSelect" class="setting-label">
+                        <span class="setting-title">Board Layout</span>
+                    </label>
+                    <p class="setting-description">
+                        Choose landscape (40×30) or portrait (30×40) board orientation.
+                    </p>
+                    <select id="boardLayoutSelect" class="setting-select">
+                        <option value="landscape" selected>Landscape (40×30)</option>
+                        <option value="portrait">Portrait (30×40)</option>
                     </select>
                 </div>
                 <div class="setting-item">

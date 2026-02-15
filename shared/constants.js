@@ -1,14 +1,38 @@
 // Game Configuration Constants
 
+export const SUBDIVISION_RATIO = 2;
+
 export const GRID = {
-    WIDTH: 20,
-    HEIGHT: 15,
-    TILE_SIZE: 60
+    WIDTH: 40,
+    HEIGHT: 30,
+    TILE_SIZE: 30
+};
+
+export const BOARD_LAYOUTS = {
+    landscape: {
+        width: 40,
+        height: 30
+    },
+    portrait: {
+        width: 30,
+        height: 40
+    }
 };
 
 export const CANVAS = {
-    WIDTH: GRID.WIDTH * GRID.TILE_SIZE,  // 1200px
-    HEIGHT: GRID.HEIGHT * GRID.TILE_SIZE  // 900px
+    getDimensions(layout = 'landscape') {
+        const board = BOARD_LAYOUTS[layout] || BOARD_LAYOUTS.landscape;
+        return {
+            width: board.width * GRID.TILE_SIZE,
+            height: board.height * GRID.TILE_SIZE
+        };
+    },
+    get WIDTH() {
+        return this.getDimensions('landscape').width;  // 1200px
+    },
+    get HEIGHT() {
+        return this.getDimensions('landscape').height; // 900px
+    }
 };
 
 export const TILE_TYPES = {
@@ -21,28 +45,31 @@ export const SHIP_TYPES = {
         level: 1,
         name: 'Sloop',
         maxHP: 4,
-        movement: 5,
+        movement: 10,
         cannons: 1,
-        range: 2,
-        vision: 2
+        range: 4,
+        vision: 8,
+        footprint: { width: 1, height: 1 }
     },
     2: {
         level: 2,
         name: 'Frigate',
         maxHP: 8,
-        movement: 4,
+        movement: 8,
         cannons: 2,
-        range: 3,
-        vision: 3
+        range: 6,
+        vision: 6,
+        footprint: { width: 2, height: 1 }
     },
     3: {
         level: 3,
         name: 'Flagship',
         maxHP: 12,
-        movement: 3,
+        movement: 6,
         cannons: 4,
-        range: 3,
-        vision: 4
+        range: 6,
+        vision: 4,
+        footprint: { width: 2, height: 2 }
     }
 };
 
@@ -82,10 +109,10 @@ export const FLEET_COMPOSITION = [
 export const MAP_GENERATION = {
     MIN_ISLANDS: 10,
     MAX_ISLANDS: 15,
-    MIN_ISLAND_SIZE: 1,
-    MAX_ISLAND_SIZE: 4,
-    EDGE_BUFFER: 2,          // Keep islands away from edges
-    STARTING_ZONE_SIZE: 4    // 4x4 starting areas
+    MIN_ISLAND_SIZE: 2,
+    MAX_ISLAND_SIZE: 8,
+    EDGE_BUFFER: 4,          // Keep islands away from edges
+    STARTING_ZONE_SIZE: 8    // 8x8 starting areas
 };
 
 export const GAME_STATES = {

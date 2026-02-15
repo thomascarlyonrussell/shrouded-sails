@@ -13,7 +13,8 @@
     "dev:client": "npm run dev -w client",
     "dev:server": "bun run server/index.ts",
     "build:client": "npm run build -w client",
-    "preview:client": "npm run preview -w client"
+    "preview:client": "npm run preview -w client",
+    "test:logic": "node --test tests/grid-subdivision.spec.test.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

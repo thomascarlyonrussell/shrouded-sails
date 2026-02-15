@@ -6,23 +6,41 @@ Renders visual representations of enemy ships at their last-known positions when
 ## Requirements
 
 ### Requirement: Ghost ship visual representation
-The system SHALL render enemy ships at their last-known positions as ghost ships with distinct visual styling.
+The system SHALL render ghost ships at their full multi-tile footprint matching the ship's actual class, not as a single tile.
 
-#### Scenario: Ghost ship rendered at last-known position
-- **WHEN** an enemy ship moves out of all friendly vision range
-- **THEN** a ghost ship SHALL be rendered at the last observed position
+#### Scenario: Ghost Frigate rendered at full footprint
+- **WHEN** a Frigate ghost ship is rendered at its last-known position
+- **THEN** the ghost SHALL be drawn spanning two tiles matching the Frigate's footprint (2×1)
+- **AND** the ghost SHALL use the ship's last-known orientation (horizontal or vertical)
 - **AND** the ghost ship SHALL have reduced opacity (translucent/dimmed appearance)
 
-#### Scenario: Ghost ship shows ship type
-- **WHEN** a ghost ship is rendered
-- **THEN** the ship type (Sloop, Frigate, Flagship) SHALL be displayed using the same shape as the actual ship
-- **AND** the color SHALL indicate the enemy player (Red or Blue)
+#### Scenario: Ghost Flagship rendered at full footprint
+- **WHEN** a Flagship ghost ship is rendered at its last-known position
+- **THEN** the ghost SHALL be drawn spanning four tiles matching the Flagship's 2×2 footprint
+- **AND** the ghost SHALL have reduced opacity (translucent/dimmed appearance)
+
+#### Scenario: Ghost Sloop rendered as single tile
+- **WHEN** a Sloop ghost ship is rendered at its last-known position
+- **THEN** the ghost SHALL be drawn within a single tile (no change from current behavior)
 
 #### Scenario: Ghost ship hides current status information
 - **WHEN** a ghost ship is rendered
 - **THEN** the current HP bar SHALL NOT be displayed
 - **AND** action indicators (M/A badges, DONE overlay) SHALL NOT be displayed
 - **AND** only the ship type and last-known position SHALL be shown
+
+### Requirement: Ghost ship stores footprint data
+The system SHALL store the full footprint information (anchor position, orientation) when recording a ghost ship's last-known state.
+
+#### Scenario: Ghost ship records orientation
+- **WHEN** a Frigate moves out of vision range
+- **THEN** the ghost ship data SHALL include the Frigate's last-known orientation (horizontal or vertical)
+- **AND** the ghost SHALL be rendered with that orientation at the last-known anchor position
+
+#### Scenario: Ghost ship records anchor position
+- **WHEN** a multi-tile ship moves out of vision range
+- **THEN** the ghost ship data SHALL record the ship's anchor position (top-left tile)
+- **AND** the ghost footprint SHALL be reconstructed from anchor + ship type + orientation
 
 ### Requirement: Ghost ship removal on re-spotting
 The system SHALL remove ghost ships when the actual enemy ship is re-spotted at a different location.
@@ -53,7 +71,10 @@ The system SHALL prevent player interaction with ghost ships as if they were act
 - **WHEN** a player attempts to target a ghost ship for boarding
 - **THEN** the ghost ship SHALL NOT be selectable as a boarding target
 
-#### Scenario: Ghost ship does not block movement
-- **WHEN** calculating valid movement positions for a friendly ship
-- **THEN** ghost ship positions SHALL NOT be treated as occupied tiles
-- **AND** friendly ships MAY move through or onto ghost ship positions
+### Requirement: Ghost ship does not block multi-tile movement
+Ghost ship positions SHALL not be treated as occupied for multi-tile collision checks.
+
+#### Scenario: Multi-tile ship moves through ghost footprint
+- **WHEN** a Flagship calculates valid movement positions
+- **THEN** positions overlapping with ghost ship footprint tiles SHALL NOT be blocked
+- **AND** the Flagship MAY move through or onto ghost ship positions

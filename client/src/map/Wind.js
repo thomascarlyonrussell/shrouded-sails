@@ -79,32 +79,23 @@ export class Wind {
 
             const oldX = ship.x;
             const oldY = ship.y;
+            const orientedFootprint = gameMap.getOrientedFootprint(ship.footprint, ship.orientation);
 
             // Calculate new position
             let newX = ship.x + (vector.dx * this.strength);
             let newY = ship.y + (vector.dy * this.strength);
 
-            // Clamp to map boundaries instead of destroying ship
-            newX = Math.max(0, Math.min(gameMap.width - 1, newX));
-            newY = Math.max(0, Math.min(gameMap.height - 1, newY));
+            // Clamp to map boundaries using full footprint dimensions.
+            newX = Math.max(0, Math.min(gameMap.width - orientedFootprint.width, newX));
+            newY = Math.max(0, Math.min(gameMap.height - orientedFootprint.height, newY));
 
-            // If clamped to edge, ship stays at edge (no destruction)
-            if (!gameMap.isValidPosition(newX, newY)) {
-                // Should never happen due to clamping, but keep as safeguard
-                results.push({
-                    ship: ship,
-                    type: 'blocked',
-                    oldPos: { x: oldX, y: oldY },
-                    newPos: { x: oldX, y: oldY }
-                });
-                continue;
-            }
-
-            // Check if hit island
-            const targetTile = gameMap.getTile(newX, newY);
-            if (targetTile.isIsland()) {
+            // Check if footprint hits island tiles
+            if (this.footprintHitsIsland(ship, newX, newY, gameMap)) {
                 // Ship takes 1 damage and stays in place
                 ship.takeDamage(1);
+                if (ship.isDestroyed) {
+                    gameMap.refreshShipRegistration(ship);
+                }
                 results.push({
                     ship: ship,
                     type: 'island-collision',
@@ -116,10 +107,10 @@ export class Wind {
                 continue;
             }
 
-            // Check if position is occupied by another ship
-            if (gameMap.isOccupied(newX, newY)) {
+            // Check if footprint collides with another ship
+            if (!this.isFootprintClearForShip(ship, newX, newY, gameMap)) {
                 // Try adjacent positions
-                const alternatePositions = this.findNearbyWaterTile(newX, newY, gameMap);
+                const alternatePositions = this.findNearbyWaterTile(newX, newY, ship, gameMap);
                 if (alternatePositions) {
                     newX = alternatePositions.x;
                     newY = alternatePositions.y;
@@ -139,6 +130,7 @@ export class Wind {
             // Move ship to new position
             ship.x = newX;
             ship.y = newY;
+            gameMap.refreshShipRegistration(ship);
 
             results.push({
                 ship: ship,
@@ -151,8 +143,27 @@ export class Wind {
         return results;
     }
 
-    findNearbyWaterTile(x, y, gameMap) {
-        // Check adjacent tiles for valid water position
+    footprintHitsIsland(ship, x, y, gameMap) {
+        const footprintTiles = ship.getOccupiedTiles(x, y, ship.orientation);
+        return footprintTiles.some(tilePos => {
+            const tile = gameMap.getTile(tilePos.x, tilePos.y);
+            return !tile || tile.isIsland();
+        });
+    }
+
+    isFootprintClearForShip(ship, x, y, gameMap) {
+        const placement = gameMap.isFootprintClear(
+            x,
+            y,
+            ship.footprint,
+            ship.orientation,
+            ship
+        );
+        return placement.clear;
+    }
+
+    findNearbyWaterTile(x, y, ship, gameMap) {
+        // Check nearby tiles for a valid full-footprint position.
         const adjacents = [
             { x: x + 1, y: y },
             { x: x - 1, y: y },
@@ -165,9 +176,9 @@ export class Wind {
         ];
 
         for (const pos of adjacents) {
-            if (!gameMap.isValidPosition(pos.x, pos.y)) continue;
-            const tile = gameMap.getTile(pos.x, pos.y);
-            if (tile.isWater() && !gameMap.isOccupied(pos.x, pos.y)) {
+            if (!this.isFootprintClearForShip(ship, pos.x, pos.y, gameMap)) continue;
+            if (this.footprintHitsIsland(ship, pos.x, pos.y, gameMap)) continue;
+            if (gameMap.isValidPosition(pos.x, pos.y, gameMap.getOrientedFootprint(ship.footprint, ship.orientation))) {
                 return pos;
             }
         }
