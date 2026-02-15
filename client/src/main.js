@@ -5,6 +5,7 @@ import { ShipPanel } from './ui/ShipPanel.js';
 import { SettingsMenu } from './ui/SettingsMenu.js';
 import { InGameSettingsPanel } from './ui/InGameSettingsPanel.js';
 import { SplashScreen } from './ui/SplashScreen.js';
+import { TutorialTour } from './ui/TutorialTour.js';
 import { AudioManager } from './audio/AudioManager.js';
 
 class GameApp {
@@ -17,28 +18,57 @@ class GameApp {
         this.settingsMenu = null;
         this.inGameSettingsPanel = null;
         this.splashScreen = null;
+        this.tutorialTour = null;
         this.audioManager = new AudioManager();
         this.audioManager.setupGlobalUIHoverSound();
         this.isRunning = false;
         this.hasShownInitialSplash = false;
+        this.lastConfirmedSettings = null;
     }
 
-    async initialize(settings = null) {
+    cloneSettings(settings) {
+        if (!settings) return null;
+
+        return {
+            ...settings,
+            audio: {
+                ...(settings.audio || {})
+            }
+        };
+    }
+
+    getDefaultSettings() {
+        return {
+            fogEnabled: true,
+            combatDetailLevel: 'detailed',
+            audio: { masterVolume: 70, effectsVolume: 80, uiVolume: 70, muted: false }
+        };
+    }
+
+    async initialize(settings = null, options = { launchMode: 'standard' }) {
         console.log('Initializing Shrouded Sails...');
+        this.stop();
+        this.teardownRuntime();
         this.setStartupOverlayState('none');
+        const launchMode = options && options.launchMode === 'tutorial' ? 'tutorial' : 'standard';
+
+        const resolvedSettings = this.cloneSettings(settings)
+            || (this.settingsMenu ? this.cloneSettings(this.settingsMenu.getSettings()) : this.getDefaultSettings());
+
+        this.lastConfirmedSettings = this.cloneSettings(resolvedSettings);
 
         // Create game
         this.game = new Game();
         this.game.setAudioManager(this.audioManager);
 
         // Apply settings if provided
-        if (settings) {
-            this.game.fogEnabled = settings.fogEnabled;
+        if (resolvedSettings) {
+            this.game.fogEnabled = resolvedSettings.fogEnabled;
             if (this.game.hud && typeof this.game.hud.setCombatDetailLevel === 'function') {
-                this.game.hud.setCombatDetailLevel(settings.combatDetailLevel);
+                this.game.hud.setCombatDetailLevel(resolvedSettings.combatDetailLevel);
             }
-            if (settings.audio) {
-                this.audioManager.applySettings(settings.audio);
+            if (resolvedSettings.audio) {
+                this.audioManager.applySettings(resolvedSettings.audio);
             }
         } else if (this.game.hud && typeof this.game.hud.setCombatDetailLevel === 'function') {
             this.game.hud.setCombatDetailLevel('detailed');
@@ -46,6 +76,9 @@ class GameApp {
 
         await this.audioManager.preload();
         this.game.initialize();
+
+        // Start background music
+        await this.audioManager.playBackgroundMusic();
 
         // Create renderer
         this.renderer = new Renderer(this.canvas, this.game.map, this.game);
@@ -70,9 +103,10 @@ class GameApp {
         this.shipPanel.setInputHandler(this.inputHandler);
 
         // Setup restart button
-        document.getElementById('restartBtn').addEventListener('click', () => {
-            this.restart();
-        });
+        const restartButton = document.getElementById('restartBtn');
+        if (restartButton) {
+            restartButton.onclick = () => this.restart();
+        }
 
         // Initial UI update
         this.inputHandler.updateUI();
@@ -81,11 +115,9 @@ class GameApp {
         this.start();
 
         // Create in-game audio settings panel
-        const settingsRef = this.settingsMenu ? this.settingsMenu.getSettings() : {
-            fogEnabled: true,
-            combatDetailLevel: 'detailed',
-            audio: { masterVolume: 70, effectsVolume: 80, uiVolume: 70, muted: false }
-        };
+        const settingsRef = this.settingsMenu
+            ? this.settingsMenu.getSettings()
+            : this.cloneSettings(resolvedSettings);
         this.inGameSettingsPanel = new InGameSettingsPanel(
             settingsRef,
             this.audioManager,
@@ -99,37 +131,102 @@ class GameApp {
                 if (this.inGameSettingsPanel) this.inGameSettingsPanel.close();
             });
         }
+
+        if (launchMode === 'tutorial') {
+            this.startTutorialTour();
+        }
+    }
+
+    startTutorialTour() {
+        if (this.tutorialTour) {
+            this.tutorialTour.destroy();
+            this.tutorialTour = null;
+        }
+
+        this.tutorialTour = new TutorialTour({
+            audioManager: this.audioManager,
+            onComplete: async () => {
+                this.tutorialTour = null;
+                await this.audioManager.fadeOutTutorialMusic({ durationMs: 900, resumeBackground: false });
+                await this.startFreshMatchFromTutorial();
+            },
+            onSkip: async () => {
+                this.tutorialTour = null;
+                await this.audioManager.fadeOutTutorialMusic({ durationMs: 900, resumeBackground: true });
+            }
+        });
+        this.tutorialTour.start();
+        this.audioManager.playTutorialMusicOnce();
+    }
+
+    async startFreshMatchFromTutorial() {
+        const settings = (this.settingsMenu ? this.cloneSettings(this.settingsMenu.getSettings()) : null)
+            || this.cloneSettings(this.lastConfirmedSettings)
+            || this.getDefaultSettings();
+
+        const gameOverModal = document.getElementById('gameOverModal');
+        if (gameOverModal) {
+            gameOverModal.classList.add('hidden');
+        }
+
+        await this.initialize(settings, { launchMode: 'standard' });
+    }
+
+    teardownRuntime() {
+        if (this.tutorialTour) {
+            this.tutorialTour.destroy();
+            this.tutorialTour = null;
+        }
+
+        if (this.inGameSettingsPanel) {
+            this.inGameSettingsPanel.destroy();
+            this.inGameSettingsPanel = null;
+        }
+
+        if (this.inputHandler) {
+            this.inputHandler.destroy();
+            this.inputHandler = null;
+        }
+
+        if (this.game && this.game.hud) {
+            this.game.hud.closeCombatFeed();
+        }
+
+        this.shipPanel = null;
+        this.renderer = null;
+        this.game = null;
     }
 
     restart() {
         console.log('Restarting game...');
 
-        // Close in-game settings panel if open
-        if (this.inGameSettingsPanel) {
-            this.inGameSettingsPanel.close();
-            this.inGameSettingsPanel = null;
-        }
-
         // Hide game over modal
-        document.getElementById('gameOverModal').classList.add('hidden');
+        const gameOverModal = document.getElementById('gameOverModal');
+        if (gameOverModal) {
+            gameOverModal.classList.add('hidden');
+        }
         this.audioManager.play('menu_close');
 
         // Stop current game
         this.stop();
-
-        // Reinitialize
-        this.game = null;
-        this.renderer = null;
-        this.inputHandler = null;
-        this.shipPanel = null;
+        this.teardownRuntime();
 
         // Show settings menu again
         this.showSettingsMenu();
     }
 
+    handleSettingsConfirmed(payload) {
+        const launchMode = payload && payload.launchMode === 'tutorial' ? 'tutorial' : 'standard';
+        const settings = payload && payload.settings ? payload.settings : payload;
+        const normalizedSettings = this.cloneSettings(settings) || this.getDefaultSettings();
+
+        this.lastConfirmedSettings = this.cloneSettings(normalizedSettings);
+        this.initialize(normalizedSettings, { launchMode });
+    }
+
     showSettingsMenu() {
         if (!this.settingsMenu) {
-            this.settingsMenu = new SettingsMenu((settings) => this.initialize(settings), this.audioManager);
+            this.settingsMenu = new SettingsMenu((payload) => this.handleSettingsConfirmed(payload), this.audioManager);
         }
         this.setStartupOverlayState('settings');
         this.settingsMenu.show();
@@ -171,6 +268,7 @@ class GameApp {
 
     render() {
         if (!this.isRunning) return;
+        if (!this.shipPanel || !this.renderer || !this.game) return;
 
         // Keep header status in sync with turn/wind changes that happen outside direct input events.
         if (this.inputHandler) {

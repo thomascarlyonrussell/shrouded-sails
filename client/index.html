@@ -157,10 +157,18 @@
                             <span id="uiVolumeValue" class="audio-control-value">70%</span>
                             <input type="range" id="uiVolumeSlider" min="0" max="100" step="1" value="70" class="audio-slider">
                         </div>
+                        <div class="audio-control-row">
+                            <label for="musicVolumeSlider" class="audio-control-label">Music Volume</label>
+                            <span id="musicVolumeValue" class="audio-control-value">50%</span>
+                            <input type="range" id="musicVolumeSlider" min="0" max="100" step="1" value="50" class="audio-slider">
+                        </div>
                     </div>
                 </div>
             </div>
-            <button id="startGameBtn" class="action-btn primary">Start Game</button>
+            <div class="settings-actions">
+                <button id="startGameBtn" class="action-btn primary" type="button">Start Game</button>
+                <button id="startTutorialBtn" class="action-btn" type="button">Start with Tutorial</button>
+            </div>
         </div>
     </div>
 
@@ -222,6 +230,11 @@
                         <label for="igUiVolumeSlider" class="audio-control-label">UI Volume</label>
                         <span id="igUiVolumeValue" class="audio-control-value">70%</span>
                         <input type="range" id="igUiVolumeSlider" min="0" max="100" step="1" value="70" class="audio-slider">
+                    </div>
+                    <div class="audio-control-row">
+                        <label for="igMusicVolumeSlider" class="audio-control-label">Music Volume</label>
+                        <span id="igMusicVolumeValue" class="audio-control-value">50%</span>
+                        <input type="range" id="igMusicVolumeSlider" min="0" max="100" step="1" value="50" class="audio-slider">
                     </div>
                 </div>
             </div>

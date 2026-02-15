@@ -15,40 +15,62 @@ export class InputHandler {
             windName: null,
             windStrength: null
         };
+        this.canvasClickHandler = (e) => this.handleCanvasClick(e);
+        this.canvasHoverHandler = (e) => this.handleCanvasHover(e);
+        this.moveButtonHandler = () => {
+            this.game.enterMoveMode();
+            this.updateUI();
+        };
+        this.fireButtonHandler = () => {
+            this.game.enterAttackMode();
+            this.updateUI();
+        };
+        this.boardButtonHandler = () => {
+            this.game.enterBoardMode();
+            this.updateUI();
+        };
+        this.endTurnButtonHandler = () => {
+            this.game.endTurn();
+            this.updateUI();
+        };
+        this.keydownHandler = (e) => this.handleKeyPress(e);
+
+        this.moveBtnEl = null;
+        this.fireBtnEl = null;
+        this.boardBtnEl = null;
+        this.endTurnBtnEl = null;
 
         this.setupEventListeners();
     }
 
     setupEventListeners() {
         // Canvas click
-        this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+        this.canvas.addEventListener('click', this.canvasClickHandler);
 
         // Canvas hover (for future tooltips)
-        this.canvas.addEventListener('mousemove', (e) => this.handleCanvasHover(e));
+        this.canvas.addEventListener('mousemove', this.canvasHoverHandler);
 
         // Action buttons
-        document.getElementById('moveBtn').addEventListener('click', () => {
-            this.game.enterMoveMode();
-            this.updateUI();
-        });
+        this.moveBtnEl = document.getElementById('moveBtn');
+        this.fireBtnEl = document.getElementById('fireBtn');
+        this.boardBtnEl = document.getElementById('boardBtn');
+        this.endTurnBtnEl = document.getElementById('endTurnBtn');
 
-        document.getElementById('fireBtn').addEventListener('click', () => {
-            this.game.enterAttackMode();
-            this.updateUI();
-        });
-
-        document.getElementById('boardBtn').addEventListener('click', () => {
-            this.game.enterBoardMode();
-            this.updateUI();
-        });
-
-        document.getElementById('endTurnBtn').addEventListener('click', () => {
-            this.game.endTurn();
-            this.updateUI();
-        });
+        if (this.moveBtnEl) {
+            this.moveBtnEl.addEventListener('click', this.moveButtonHandler);
+        }
+        if (this.fireBtnEl) {
+            this.fireBtnEl.addEventListener('click', this.fireButtonHandler);
+        }
+        if (this.boardBtnEl) {
+            this.boardBtnEl.addEventListener('click', this.boardButtonHandler);
+        }
+        if (this.endTurnBtnEl) {
+            this.endTurnBtnEl.addEventListener('click', this.endTurnButtonHandler);
+        }
 
         // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+        document.addEventListener('keydown', this.keydownHandler);
     }
 
     handleCanvasClick(event) {
@@ -188,5 +210,27 @@ export class InputHandler {
             elements.windStrength.textContent = windStrength;
             this.headerStateCache.windStrength = windStrength;
         }
+    }
+
+    destroy() {
+        if (this.canvas) {
+            this.canvas.removeEventListener('click', this.canvasClickHandler);
+            this.canvas.removeEventListener('mousemove', this.canvasHoverHandler);
+        }
+
+        if (this.moveBtnEl) {
+            this.moveBtnEl.removeEventListener('click', this.moveButtonHandler);
+        }
+        if (this.fireBtnEl) {
+            this.fireBtnEl.removeEventListener('click', this.fireButtonHandler);
+        }
+        if (this.boardBtnEl) {
+            this.boardBtnEl.removeEventListener('click', this.boardButtonHandler);
+        }
+        if (this.endTurnBtnEl) {
+            this.endTurnBtnEl.removeEventListener('click', this.endTurnButtonHandler);
+        }
+
+        document.removeEventListener('keydown', this.keydownHandler);
     }
 }

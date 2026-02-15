@@ -10,6 +10,7 @@ export class SettingsMenu {
                 masterVolume: 70,
                 effectsVolume: 80,
                 uiVolume: 70,
+                musicVolume: 50,
                 muted: false
             }
         };
@@ -22,9 +23,13 @@ export class SettingsMenu {
         this.masterVolumeSlider = null;
         this.effectsVolumeSlider = null;
         this.uiVolumeSlider = null;
+        this.musicVolumeSlider = null;
         this.masterVolumeValue = null;
         this.effectsVolumeValue = null;
         this.uiVolumeValue = null;
+        this.musicVolumeValue = null;
+        this.startGameBtn = null;
+        this.startTutorialBtn = null;
 
         this.initialize();
     }
@@ -52,6 +57,7 @@ export class SettingsMenu {
         merged.audio.masterVolume = this.normalizeVolume(merged.audio.masterVolume, this.defaultSettings.audio.masterVolume);
         merged.audio.effectsVolume = this.normalizeVolume(merged.audio.effectsVolume, this.defaultSettings.audio.effectsVolume);
         merged.audio.uiVolume = this.normalizeVolume(merged.audio.uiVolume, this.defaultSettings.audio.uiVolume);
+        merged.audio.musicVolume = this.normalizeVolume(merged.audio.musicVolume, this.defaultSettings.audio.musicVolume);
         merged.audio.muted = Boolean(merged.audio.muted);
         merged.combatDetailLevel = merged.combatDetailLevel === 'compact' ? 'compact' : 'detailed';
         merged.fogEnabled = Boolean(merged.fogEnabled);
@@ -89,6 +95,9 @@ export class SettingsMenu {
         if (this.uiVolumeValue) {
             this.uiVolumeValue.textContent = `${this.settings.audio.uiVolume}%`;
         }
+        if (this.musicVolumeValue) {
+            this.musicVolumeValue.textContent = `${this.settings.audio.musicVolume}%`;
+        }
     }
 
     initialize() {
@@ -100,9 +109,13 @@ export class SettingsMenu {
         this.masterVolumeSlider = document.getElementById('masterVolumeSlider');
         this.effectsVolumeSlider = document.getElementById('effectsVolumeSlider');
         this.uiVolumeSlider = document.getElementById('uiVolumeSlider');
+        this.musicVolumeSlider = document.getElementById('musicVolumeSlider');
         this.masterVolumeValue = document.getElementById('masterVolumeValue');
         this.effectsVolumeValue = document.getElementById('effectsVolumeValue');
         this.uiVolumeValue = document.getElementById('uiVolumeValue');
+        this.musicVolumeValue = document.getElementById('musicVolumeValue');
+        this.startGameBtn = document.getElementById('startGameBtn');
+        this.startTutorialBtn = document.getElementById('startTutorialBtn');
 
         if (!this.menuElement || !this.fogCheckbox) {
             console.error('Settings menu elements not found in DOM');
@@ -125,6 +138,9 @@ export class SettingsMenu {
         }
         if (this.uiVolumeSlider) {
             this.uiVolumeSlider.value = String(this.settings.audio.uiVolume);
+        }
+        if (this.musicVolumeSlider) {
+            this.musicVolumeSlider.value = String(this.settings.audio.musicVolume);
         }
         this.updateAudioValueLabels();
         this.applyAudioSettingsLive();
@@ -180,18 +196,35 @@ export class SettingsMenu {
             });
         }
 
-        // Add event listener for start game button
-        const startButton = document.getElementById('startGameBtn');
-        if (startButton) {
-            startButton.addEventListener('click', () => {
-                this.hide();
+        if (this.musicVolumeSlider) {
+            this.musicVolumeSlider.addEventListener('input', (e) => {
+                this.settings.audio.musicVolume = this.normalizeVolume(e.target.value, this.defaultSettings.audio.musicVolume);
+                this.updateAudioValueLabels();
+                this.applyAudioSettingsLive();
                 this.saveSettings();
-                if (this.onSettingsConfirmed) {
-                    this.onSettingsConfirmed({
-                        ...this.settings,
-                        audio: { ...this.settings.audio }
-                    });
-                }
+            });
+        }
+
+        // Add event listener for start game button
+        if (this.startGameBtn) {
+            this.startGameBtn.addEventListener('click', () => this.confirmSettings('standard'));
+        }
+
+        if (this.startTutorialBtn) {
+            this.startTutorialBtn.addEventListener('click', () => this.confirmSettings('tutorial'));
+        }
+    }
+
+    confirmSettings(launchMode = 'standard') {
+        this.hide();
+        this.saveSettings();
+        if (this.onSettingsConfirmed) {
+            this.onSettingsConfirmed({
+                settings: {
+                    ...this.settings,
+                    audio: { ...this.settings.audio }
+                },
+                launchMode: launchMode === 'tutorial' ? 'tutorial' : 'standard'
             });
         }
     }
@@ -203,6 +236,7 @@ export class SettingsMenu {
             if (this.masterVolumeSlider) this.masterVolumeSlider.value = String(this.settings.audio.masterVolume);
             if (this.effectsVolumeSlider) this.effectsVolumeSlider.value = String(this.settings.audio.effectsVolume);
             if (this.uiVolumeSlider) this.uiVolumeSlider.value = String(this.settings.audio.uiVolume);
+            if (this.musicVolumeSlider) this.musicVolumeSlider.value = String(this.settings.audio.musicVolume);
             this.updateAudioValueLabels();
 
             this.menuElement.classList.remove('hidden');

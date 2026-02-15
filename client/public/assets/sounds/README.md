@@ -30,6 +30,15 @@ Example:
 
 The game will choose a supported format at runtime and fall back silently if files are missing.
 
+**Background Music:**
+
+The background music file also requires both formats:
+
+- `background_music.ogg`
+- `background_music.mp3`
+
+The background music starts automatically when the game begins and loops continuously. Volume is controlled separately via the Music Volume setting.
+
 ## ElevenLabs Sound Effect Prompts
 
 Use these prompts with ElevenLabs to generate each sound. After generating as MP3,

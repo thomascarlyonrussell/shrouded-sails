@@ -15,9 +15,38 @@ export class InGameSettingsPanel {
         this.masterSlider = document.getElementById('igMasterVolumeSlider');
         this.effectsSlider = document.getElementById('igEffectsVolumeSlider');
         this.uiSlider = document.getElementById('igUiVolumeSlider');
+        this.musicSlider = document.getElementById('igMusicVolumeSlider');
         this.masterValue = document.getElementById('igMasterVolumeValue');
         this.effectsValue = document.getElementById('igEffectsVolumeValue');
         this.uiValue = document.getElementById('igUiVolumeValue');
+        this.musicValue = document.getElementById('igMusicVolumeValue');
+        this.boundToggle = () => this.toggle();
+        this.boundClose = () => this.close();
+        this.boundBackdropClose = () => this.close();
+        this.boundMuteChange = (e) => {
+            this.settings.audio.muted = e.target.checked;
+            this.applyAndSave();
+        };
+        this.boundMasterInput = (e) => {
+            this.settings.audio.masterVolume = this.normalizeVolume(e.target.value);
+            this.updateValueLabels();
+            this.applyAndSave();
+        };
+        this.boundEffectsInput = (e) => {
+            this.settings.audio.effectsVolume = this.normalizeVolume(e.target.value);
+            this.updateValueLabels();
+            this.applyAndSave();
+        };
+        this.boundUiInput = (e) => {
+            this.settings.audio.uiVolume = this.normalizeVolume(e.target.value);
+            this.updateValueLabels();
+            this.applyAndSave();
+        };
+        this.boundMusicInput = (e) => {
+            this.settings.audio.musicVolume = this.normalizeVolume(e.target.value);
+            this.updateValueLabels();
+            this.applyAndSave();
+        };
 
         this.boundKeyDown = (e) => {
             if (e.key === 'Escape' && this.isOpen) this.close();
@@ -28,13 +57,13 @@ export class InGameSettingsPanel {
 
     initialize() {
         if (this.buttonEl) {
-            this.buttonEl.onclick = () => this.toggle();
+            this.buttonEl.addEventListener('click', this.boundToggle);
         }
         if (this.closeEl) {
-            this.closeEl.onclick = () => this.close();
+            this.closeEl.addEventListener('click', this.boundClose);
         }
         if (this.backdropEl) {
-            this.backdropEl.onclick = () => this.close();
+            this.backdropEl.addEventListener('click', this.boundBackdropClose);
         }
 
         this.setupAudioControls();
@@ -43,31 +72,19 @@ export class InGameSettingsPanel {
 
     setupAudioControls() {
         if (this.muteCheckbox) {
-            this.muteCheckbox.addEventListener('change', (e) => {
-                this.settings.audio.muted = e.target.checked;
-                this.applyAndSave();
-            });
+            this.muteCheckbox.addEventListener('change', this.boundMuteChange);
         }
         if (this.masterSlider) {
-            this.masterSlider.addEventListener('input', (e) => {
-                this.settings.audio.masterVolume = this.normalizeVolume(e.target.value);
-                this.updateValueLabels();
-                this.applyAndSave();
-            });
+            this.masterSlider.addEventListener('input', this.boundMasterInput);
         }
         if (this.effectsSlider) {
-            this.effectsSlider.addEventListener('input', (e) => {
-                this.settings.audio.effectsVolume = this.normalizeVolume(e.target.value);
-                this.updateValueLabels();
-                this.applyAndSave();
-            });
+            this.effectsSlider.addEventListener('input', this.boundEffectsInput);
         }
         if (this.uiSlider) {
-            this.uiSlider.addEventListener('input', (e) => {
-                this.settings.audio.uiVolume = this.normalizeVolume(e.target.value);
-                this.updateValueLabels();
-                this.applyAndSave();
-            });
+            this.uiSlider.addEventListener('input', this.boundUiInput);
+        }
+        if (this.musicSlider) {
+            this.musicSlider.addEventListener('input', this.boundMusicInput);
         }
     }
 
@@ -93,6 +110,7 @@ export class InGameSettingsPanel {
         if (this.masterSlider) this.masterSlider.value = String(this.settings.audio.masterVolume);
         if (this.effectsSlider) this.effectsSlider.value = String(this.settings.audio.effectsVolume);
         if (this.uiSlider) this.uiSlider.value = String(this.settings.audio.uiVolume);
+        if (this.musicSlider) this.musicSlider.value = String(this.settings.audio.musicVolume || 50);
         this.updateValueLabels();
     }
 
@@ -100,6 +118,7 @@ export class InGameSettingsPanel {
         if (this.masterValue) this.masterValue.textContent = `${this.settings.audio.masterVolume}%`;
         if (this.effectsValue) this.effectsValue.textContent = `${this.settings.audio.effectsVolume}%`;
         if (this.uiValue) this.uiValue.textContent = `${this.settings.audio.uiVolume}%`;
+        if (this.musicValue) this.musicValue.textContent = `${this.settings.audio.musicVolume || 50}%`;
     }
 
     toggle() {
@@ -138,5 +157,39 @@ export class InGameSettingsPanel {
         if (this.audioManager) this.audioManager.play('menu_close');
 
         if (this.onClose) this.onClose();
+    }
+
+    destroy() {
+        if (this.isOpen) {
+            this.close();
+        }
+
+        document.removeEventListener('keydown', this.boundKeyDown);
+
+        if (this.buttonEl) {
+            this.buttonEl.removeEventListener('click', this.boundToggle);
+        }
+        if (this.closeEl) {
+            this.closeEl.removeEventListener('click', this.boundClose);
+        }
+        if (this.backdropEl) {
+            this.backdropEl.removeEventListener('click', this.boundBackdropClose);
+        }
+
+        if (this.muteCheckbox) {
+            this.muteCheckbox.removeEventListener('change', this.boundMuteChange);
+        }
+        if (this.masterSlider) {
+            this.masterSlider.removeEventListener('input', this.boundMasterInput);
+        }
+        if (this.effectsSlider) {
+            this.effectsSlider.removeEventListener('input', this.boundEffectsInput);
+        }
+        if (this.uiSlider) {
+            this.uiSlider.removeEventListener('input', this.boundUiInput);
+        }
+        if (this.musicSlider) {
+            this.musicSlider.removeEventListener('input', this.boundMusicInput);
+        }
     }
 }
