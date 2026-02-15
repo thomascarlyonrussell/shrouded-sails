@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="game-container">
-        <header class="game-header">
+        <header class="game-header" id="gameHeader">
             <h1 class="game-title">Shrouded Sails</h1>
             <div class="header-info">
                 <div class="header-zone header-zone-left">
@@ -31,6 +31,15 @@
                     </div>
                 </div>
                 <div class="header-zone header-zone-right">
+                    <button
+                        id="mobileHeaderToggle"
+                        class="mobile-ui-toggle mobile-ui-toggle-header"
+                        type="button"
+                        aria-expanded="true"
+                        aria-controls="gameHeader"
+                    >
+                        Hide Top
+                    </button>
                     <button id="combatFeedButton" class="combat-feed-button" type="button" aria-expanded="false" aria-controls="combatFeedPanel">
                         <span id="combatFeedStatusIcon" class="combat-feed-status-icon">🧭</span>
                         <span class="combat-feed-text">
@@ -68,9 +77,20 @@
             </aside>
         </div>
 
-        <footer class="game-footer">
-            <div class="ship-info">
-                <span id="selectedShipInfo">No ship selected</span>
+        <footer class="game-footer" id="gameFooter">
+            <div class="footer-top-row">
+                <div class="ship-info">
+                    <span id="selectedShipInfo">No ship selected</span>
+                </div>
+                <button
+                    id="mobileFooterToggle"
+                    class="mobile-ui-toggle mobile-ui-toggle-footer"
+                    type="button"
+                    aria-expanded="true"
+                    aria-controls="gameFooter"
+                >
+                    Hide Actions
+                </button>
             </div>
             <div class="action-buttons">
                 <button id="moveBtn" class="action-btn" disabled>Move</button>

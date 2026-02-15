@@ -24,6 +24,7 @@ class GameApp {
         this.isRunning = false;
         this.hasShownInitialSplash = false;
         this.lastConfirmedSettings = null;
+        this.setupMobileLayoutControls();
     }
 
     cloneSettings(settings) {
@@ -257,6 +258,44 @@ class GameApp {
 
         document.body.classList.remove('startup-overlay-active');
         delete document.body.dataset.startupOverlay;
+    }
+
+    setupMobileLayoutControls() {
+        this.gameContainerEl = document.querySelector('.game-container');
+        this.mobileHeaderToggleEl = document.getElementById('mobileHeaderToggle');
+        this.mobileFooterToggleEl = document.getElementById('mobileFooterToggle');
+
+        if (!this.gameContainerEl) return;
+
+        const syncToggleLabels = () => {
+            const headerCollapsed = this.gameContainerEl.classList.contains('is-header-collapsed');
+            const footerCollapsed = this.gameContainerEl.classList.contains('is-footer-collapsed');
+
+            if (this.mobileHeaderToggleEl) {
+                this.mobileHeaderToggleEl.textContent = headerCollapsed ? 'Show Top' : 'Hide Top';
+                this.mobileHeaderToggleEl.setAttribute('aria-expanded', (!headerCollapsed).toString());
+            }
+            if (this.mobileFooterToggleEl) {
+                this.mobileFooterToggleEl.textContent = footerCollapsed ? 'Show Actions' : 'Hide Actions';
+                this.mobileFooterToggleEl.setAttribute('aria-expanded', (!footerCollapsed).toString());
+            }
+        };
+
+        if (this.mobileHeaderToggleEl) {
+            this.mobileHeaderToggleEl.onclick = () => {
+                this.gameContainerEl.classList.toggle('is-header-collapsed');
+                syncToggleLabels();
+            };
+        }
+
+        if (this.mobileFooterToggleEl) {
+            this.mobileFooterToggleEl.onclick = () => {
+                this.gameContainerEl.classList.toggle('is-footer-collapsed');
+                syncToggleLabels();
+            };
+        }
+
+        syncToggleLabels();
     }
 
     start() {

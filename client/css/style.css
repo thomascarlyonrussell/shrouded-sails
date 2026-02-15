@@ -211,6 +211,28 @@ body.startup-overlay-active .game-container {
     border-top: 2px solid #2c5f8d;
 }
 
+.footer-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.mobile-ui-toggle {
+    display: none;
+    border: 1px solid rgba(120, 155, 186, 0.45);
+    background: rgba(15, 27, 40, 0.95);
+    color: #dceaf7;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.45px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
 .combat-feed-button {
     border: 1px solid rgba(120, 155, 186, 0.45);
     background: linear-gradient(135deg, rgba(19, 32, 46, 0.96) 0%, rgba(14, 24, 36, 0.96) 100%);
@@ -982,17 +1004,26 @@ body.startup-overlay-active .game-container {
 
 @media (max-width: 768px) {
     body {
-        padding: 10px;
+        padding: 8px;
     }
 
     .game-container {
-        height: calc(100vh - 20px);
-        max-height: calc(100vh - 20px);
+        height: calc(100dvh - 16px);
+        max-height: calc(100dvh - 16px);
+    }
+
+    .game-header {
+        padding: 10px 12px;
+    }
+
+    .game-title {
+        font-size: 34px;
+        margin-bottom: 8px;
     }
 
     .header-info {
         grid-template-columns: 1fr;
-        gap: 10px;
+        gap: 8px;
     }
 
     .header-zone-center {
@@ -1008,22 +1039,36 @@ body.startup-overlay-active .game-container {
 
     .header-zone-right {
         order: 3;
-        justify-content: center;
+        justify-content: stretch;
         width: 100%;
+        gap: 8px;
     }
 
     .header-pill {
-        font-size: 16px;
+        font-size: 15px;
+        padding: 4px 12px;
     }
 
     .wind-widget {
         min-width: 0;
         width: min(100%, 340px);
+        padding: 6px 11px;
     }
 
     .header-zone-right .combat-feed-button {
-        width: 100%;
+        flex: 1;
         min-width: 0;
+    }
+
+    .header-zone-right .in-game-settings-button {
+        width: 36px;
+        height: 36px;
+    }
+
+    .mobile-ui-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .in-game-settings-panel {
@@ -1031,6 +1076,7 @@ body.startup-overlay-active .game-container {
     }
 
     .game-board {
+        padding: 6px 8px 10px;
         align-items: stretch;
     }
 
@@ -1042,14 +1088,33 @@ body.startup-overlay-active .game-container {
     .canvas-container {
         flex: 1;
         min-height: 0;
+        padding-bottom: 0;
     }
 
     .action-buttons {
         flex-direction: column;
+        gap: 8px;
     }
 
     .action-btn {
         min-width: 100%;
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+
+    .game-footer {
+        padding: 12px 10px 10px;
+    }
+
+    .ship-info {
+        margin-bottom: 8px;
+        font-size: 14px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .footer-top-row {
+        margin-bottom: 8px;
     }
 
     .modal-content {
@@ -1064,10 +1129,66 @@ body.startup-overlay-active .game-container {
 
     #gameCanvas {
         aspect-ratio: 4 / 3;
-        width: auto;
+        width: 100%;
         height: auto;
         max-width: 100%;
-        max-height: 100%;
+        max-height: none;
+    }
+
+    .game-container.is-header-collapsed .game-header {
+        padding: 6px 10px;
+    }
+
+    .game-container.is-header-collapsed .game-title,
+    .game-container.is-header-collapsed .header-zone-left,
+    .game-container.is-header-collapsed .header-zone-center {
+        display: none;
+    }
+
+    .game-container.is-header-collapsed .header-info {
+        grid-template-columns: 1fr;
+    }
+
+    .game-container.is-header-collapsed .header-zone-right {
+        justify-content: space-between;
+    }
+
+    .game-container.is-header-collapsed .header-zone-right .combat-feed-button,
+    .game-container.is-header-collapsed .header-zone-right .in-game-settings-button {
+        display: none;
+    }
+
+    .game-container.is-footer-collapsed .game-footer {
+        padding: 6px 10px;
+    }
+
+    .game-container.is-footer-collapsed .ship-info,
+    .game-container.is-footer-collapsed .action-buttons {
+        display: none;
+    }
+
+    .game-container.is-footer-collapsed .footer-top-row {
+        justify-content: flex-end;
+        margin-bottom: 0;
+    }
+}
+
+@media (max-width: 768px) and (max-height: 700px) {
+    .game-title {
+        display: none;
+    }
+
+    .header-info {
+        gap: 6px;
+    }
+
+    .header-zone-left,
+    .header-zone-center {
+        order: 1;
+    }
+
+    .header-zone-right {
+        order: 2;
     }
 }
 
