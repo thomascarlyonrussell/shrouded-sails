@@ -147,7 +147,7 @@ class GameApp {
             audioManager: this.audioManager,
             onComplete: async () => {
                 this.tutorialTour = null;
-                await this.audioManager.fadeOutTutorialMusic({ durationMs: 900, resumeBackground: false });
+                await this.audioManager.fadeOutTutorialMusic({ durationMs: 900, resumeBackground: true });
                 await this.startFreshMatchFromTutorial();
             },
             onSkip: async () => {
