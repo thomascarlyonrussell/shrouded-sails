@@ -3,6 +3,7 @@ import { Renderer } from './ui/Renderer.js';
 import { InputHandler } from './core/InputHandler.js';
 import { ShipPanel } from './ui/ShipPanel.js';
 import { SettingsMenu } from './ui/SettingsMenu.js';
+import { SplashScreen } from './ui/SplashScreen.js';
 import { AudioManager } from './audio/AudioManager.js';
 
 class GameApp {
@@ -13,13 +14,16 @@ class GameApp {
         this.inputHandler = null;
         this.shipPanel = null;
         this.settingsMenu = null;
+        this.splashScreen = null;
         this.audioManager = new AudioManager();
         this.audioManager.setupGlobalUIHoverSound();
         this.isRunning = false;
+        this.hasShownInitialSplash = false;
     }
 
     async initialize(settings = null) {
         console.log('Initializing Shrouded Sails...');
+        this.setStartupOverlayState('none');
 
         // Create game
         this.game = new Game();
@@ -99,7 +103,35 @@ class GameApp {
         if (!this.settingsMenu) {
             this.settingsMenu = new SettingsMenu((settings) => this.initialize(settings), this.audioManager);
         }
+        this.setStartupOverlayState('settings');
         this.settingsMenu.show();
+    }
+
+    showSplashThenSettings() {
+        if (this.hasShownInitialSplash) {
+            this.showSettingsMenu();
+            return;
+        }
+
+        this.hasShownInitialSplash = true;
+        if (!this.splashScreen) {
+            this.splashScreen = new SplashScreen(() => this.showSettingsMenu(), this.audioManager);
+        }
+
+        this.setStartupOverlayState('splash');
+        this.splashScreen.show();
+    }
+
+    setStartupOverlayState(mode) {
+        const activeModes = new Set(['splash', 'settings']);
+        if (activeModes.has(mode)) {
+            document.body.classList.add('startup-overlay-active');
+            document.body.dataset.startupOverlay = mode;
+            return;
+        }
+
+        document.body.classList.remove('startup-overlay-active');
+        delete document.body.dataset.startupOverlay;
     }
 
     start() {
@@ -141,5 +173,5 @@ class GameApp {
 // Start game when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     const game = new GameApp();
-    game.showSettingsMenu();
+    game.showSplashThenSettings();
 });

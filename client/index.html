@@ -77,10 +77,35 @@
         </footer>
     </div>
 
+    <!-- Splash Modal -->
+    <div
+        id="splashModal"
+        class="modal splash-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="splashTitle"
+        aria-describedby="splashDescription"
+    >
+        <div class="modal-content splash-modal-content">
+            <h2 id="splashTitle">Shrouded Sails</h2>
+            <p id="splashDescription" class="splash-tagline">Chart the fog. Command your fleet.</p>
+            <p class="splash-hint">Click anywhere to continue</p>
+            <button id="continueFromSplashBtn" class="action-btn primary splash-continue-btn" type="button">
+                Continue
+            </button>
+        </div>
+    </div>
+
     <!-- Settings Modal -->
-    <div id="settingsModal" class="modal">
+    <div
+        id="settingsModal"
+        class="modal hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settingsTitle"
+    >
         <div class="modal-content settings-modal">
-            <h2>Game Settings</h2>
+            <h2 id="settingsTitle">Game Settings</h2>
             <div class="settings-section">
                 <div class="setting-item">
                     <label for="fogOfWarCheckbox" class="setting-label">

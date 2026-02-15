@@ -31,6 +31,12 @@ body {
     max-height: calc(100vh - 40px);
     display: flex;
     flex-direction: column;
+    transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+body.startup-overlay-active .game-container {
+    filter: blur(2px) saturate(0.7) brightness(0.48);
+    opacity: 0.9;
 }
 
 .game-header {
@@ -809,10 +815,12 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgb(0, 0, 0);
+    background: rgba(3, 8, 14, 0.68);
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: clamp(10px, 3vh, 24px);
+    overflow-y: auto;
     z-index: 1000;
 }
 
@@ -827,7 +835,10 @@ body {
     padding: 40px;
     text-align: center;
     box-shadow: 0 0 50px rgba(52, 152, 219, 0.5);
-    max-width: 500px;
+    width: min(100%, 500px);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    scrollbar-gutter: stable;
 }
 
 .modal-content h2 {
@@ -942,8 +953,9 @@ body {
     }
 
     .modal-content {
-        margin: 20px;
-        padding: 30px;
+        width: min(100%, 560px);
+        max-height: calc(100vh - 28px);
+        padding: 24px 20px;
     }
 
     .combat-feed-panel {
@@ -961,17 +973,18 @@ body {
 
 /* Settings Modal Styles */
 .settings-modal {
-    max-width: 600px;
+    max-width: 620px;
     text-align: left;
+    padding: 26px 24px;
 }
 
 .settings-section {
-    margin: 30px 0;
+    margin: 18px 0 14px;
 }
 
 .setting-item {
-    margin-bottom: 25px;
-    padding: 20px;
+    margin-bottom: 14px;
+    padding: 14px;
     background: rgba(44, 95, 141, 0.2);
     border-radius: 8px;
     border: 1px solid rgba(44, 95, 141, 0.4);
@@ -980,9 +993,9 @@ body {
 .setting-label {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     cursor: pointer;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .setting-label input[type="checkbox"] {
@@ -994,23 +1007,23 @@ body {
 
 .setting-title {
     color: #ecf0f1;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
 }
 
 .setting-description {
     color: #bdc3c7;
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 13px;
+    line-height: 1.45;
     margin: 0;
     padding-left: 32px;
 }
 
 .setting-select {
     width: calc(100% - 32px);
-    margin-top: 12px;
+    margin-top: 10px;
     margin-left: 32px;
-    padding: 10px 12px;
+    padding: 9px 11px;
     border-radius: 6px;
     border: 1px solid rgba(102, 150, 193, 0.55);
     background: rgba(19, 34, 50, 0.95);
@@ -1020,10 +1033,10 @@ body {
 
 .audio-controls {
     margin-left: 32px;
-    margin-top: 12px;
+    margin-top: 10px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .audio-control-row {
@@ -1053,9 +1066,49 @@ body {
 
 .settings-modal .action-btn {
     width: 100%;
-    margin-top: 20px;
+    margin-top: 12px;
+    font-size: 17px;
+    padding: 13px;
+}
+
+.settings-modal h2 {
+    font-size: 30px;
+    margin-bottom: 12px;
+}
+
+.splash-modal {
+    cursor: pointer;
+}
+
+.splash-modal-content {
+    text-align: center;
+    cursor: default;
+    max-width: 560px;
+    padding: 34px 28px 26px;
+}
+
+.splash-modal-content h2 {
+    font-size: clamp(40px, 7vw, 64px);
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+.splash-tagline {
+    margin: 0;
     font-size: 18px;
-    padding: 15px;
+    color: #d0e4f4;
+}
+
+.splash-hint {
+    margin: 14px 0 22px;
+    font-size: 13px;
+    color: #8db4d4;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.splash-continue-btn {
+    width: min(260px, 100%);
 }
 
 /* Turn Transition Modal Styles */
@@ -1084,5 +1137,17 @@ body {
 @media (max-width: 768px) {
     .audio-controls {
         margin-left: 0;
+    }
+
+    .splash-modal-content h2 {
+        font-size: clamp(34px, 12vw, 48px);
+    }
+
+    .splash-tagline {
+        font-size: 16px;
+    }
+
+    .splash-hint {
+        margin-bottom: 18px;
     }
 }
