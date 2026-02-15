@@ -83,3 +83,10 @@ convert to OGG with: `ffmpeg -i sound.mp3 sound.ogg`
 
 **`menu_close`** (gain: 0.55, <1s)
 > A parchment map being rolled up and set down on a wooden table. Soft paper folding sound, slightly quicker and quieter than unrolling. Under 1 second.
+
+---
+
+## Background Music
+
+**`background_music`** (looping, ~2-3 minutes recommended)
+> Dark, moody pirate sea shanty with a slow, deliberate cadence. Begin with ocean waves and distant seagull cries as an ambient layer beneath the music. Atmosphere should be intense and foreboding — this is naval combat, not celebration. Include deep rhythmic percussion, low strings or fiddle, accordion drones, and a haunting melody. Slow tempo, brooding and atmospheric. Think menacing sea shanty meets cinematic tension. Should loop seamlessly for combat gameplay background.
