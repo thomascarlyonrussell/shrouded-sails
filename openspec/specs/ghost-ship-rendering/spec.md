@@ -6,7 +6,12 @@ Renders visual representations of enemy ships at their last-known positions when
 ## Requirements
 
 ### Requirement: Ghost ship visual representation
-The system SHALL render ghost ships at their full multi-tile footprint matching the ship's actual class, not as a single tile.
+The system SHALL render enemy ships at their last-known positions as ghost ships with distinct visual styling.
+
+#### Scenario: Ghost ship rendered at last-known position
+- **WHEN** an enemy ship moves out of all friendly vision range
+- **THEN** a ghost ship SHALL be rendered at the last observed position
+- **AND** the ghost ship SHALL have reduced opacity (translucent/dimmed appearance)
 
 #### Scenario: Ghost Frigate rendered at full footprint
 - **WHEN** a Frigate ghost ship is rendered at its last-known position
@@ -22,6 +27,12 @@ The system SHALL render ghost ships at their full multi-tile footprint matching 
 #### Scenario: Ghost Sloop rendered as single tile
 - **WHEN** a Sloop ghost ship is rendered at its last-known position
 - **THEN** the ghost SHALL be drawn within a single tile (no change from current behavior)
+
+#### Scenario: Ghost ship shows ship type
+- **WHEN** a ghost ship is rendered
+- **THEN** the ship type (Sloop, Frigate, Flagship) SHALL be displayed using the same hull silhouette shape as the actual ship
+- **AND** the hull silhouette SHALL include mast lines matching the ship type (1 for Sloop, 2 for Frigate, 3 for Flagship)
+- **AND** the color SHALL indicate the enemy player (Red or Blue)
 
 #### Scenario: Ghost ship hides current status information
 - **WHEN** a ghost ship is rendered
