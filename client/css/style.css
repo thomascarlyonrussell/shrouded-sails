@@ -315,6 +315,51 @@ body.startup-overlay-active .game-container {
     display: none;
 }
 
+.zoom-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px;
+    border: 1px solid rgba(120, 155, 186, 0.45);
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(19, 32, 46, 0.96) 0%, rgba(14, 24, 36, 0.96) 100%);
+    flex-shrink: 0;
+}
+
+.zoom-control-btn {
+    border: 1px solid rgba(120, 155, 186, 0.45);
+    background: rgba(14, 24, 36, 0.9);
+    color: #e4edf5;
+    border-radius: 999px;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    font-weight: 700;
+}
+
+.zoom-control-btn:hover {
+    border-color: rgba(156, 194, 227, 0.65);
+}
+
+.zoom-control-btn:focus-visible {
+    outline: 2px solid #5aa9ff;
+    outline-offset: 2px;
+}
+
+.zoom-control-reset {
+    width: auto;
+    min-width: 58px;
+    padding: 0 12px;
+    font-size: 12px;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+}
+
 .combat-feed-backdrop {
     position: fixed;
     inset: 0;
@@ -1076,6 +1121,10 @@ body.startup-overlay-active .game-container {
         min-width: 0;
     }
 
+    .zoom-controls {
+        display: none;
+    }
+
     .header-zone-right .in-game-settings-button {
         width: 36px;
         height: 36px;
@@ -1182,6 +1231,7 @@ body.startup-overlay-active .game-container {
     }
 
     .game-container.is-header-collapsed .header-zone-right .combat-feed-button,
+    .game-container.is-header-collapsed .header-zone-right .zoom-controls,
     .game-container.is-header-collapsed .header-zone-right .in-game-settings-button {
         display: none;
     }

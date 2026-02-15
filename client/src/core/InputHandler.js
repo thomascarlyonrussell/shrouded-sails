@@ -24,9 +24,21 @@ export class InputHandler {
             lastY: 0,
             pinchDistance: null
         };
+        this.mouseState = {
+            active: false,
+            startX: 0,
+            startY: 0,
+            lastX: 0,
+            lastY: 0,
+            panning: false,
+            suppressNextClick: false
+        };
 
         this.canvasClickHandler = (e) => this.handleCanvasClick(e);
         this.canvasHoverHandler = (e) => this.handleCanvasHover(e);
+        this.mouseDownHandler = (e) => this.handleMouseDown(e);
+        this.mouseMoveHandler = (e) => this.handleMouseMove(e);
+        this.mouseUpHandler = (e) => this.handleMouseUp(e);
         this.touchStartHandler = (e) => this.handleTouchStart(e);
         this.touchMoveHandler = (e) => this.handleTouchMove(e);
         this.touchEndHandler = (e) => this.handleTouchEnd(e);
@@ -34,6 +46,9 @@ export class InputHandler {
         this.fireButtonHandler = () => { this.game.enterAttackMode(); this.updateUI(); };
         this.boardButtonHandler = () => { this.game.enterBoardMode(); this.updateUI(); };
         this.endTurnButtonHandler = () => { this.game.endTurn(); this.updateUI(); };
+        this.zoomInButtonHandler = () => this.zoomIn();
+        this.zoomOutButtonHandler = () => this.zoomOut();
+        this.zoomResetButtonHandler = () => this.resetZoom();
         this.keydownHandler = (e) => this.handleKeyPress(e);
 
         this.setupEventListeners();
@@ -42,22 +57,88 @@ export class InputHandler {
     setupEventListeners() {
         this.canvas.addEventListener('click', this.canvasClickHandler);
         this.canvas.addEventListener('mousemove', this.canvasHoverHandler);
+        this.canvas.addEventListener('mousedown', this.mouseDownHandler);
         this.canvas.addEventListener('touchstart', this.touchStartHandler, { passive: false });
         this.canvas.addEventListener('touchmove', this.touchMoveHandler, { passive: false });
         this.canvas.addEventListener('touchend', this.touchEndHandler);
         this.canvas.addEventListener('touchcancel', this.touchEndHandler);
+        document.addEventListener('mousemove', this.mouseMoveHandler);
+        document.addEventListener('mouseup', this.mouseUpHandler);
 
         this.moveBtnEl = document.getElementById('moveBtn');
         this.fireBtnEl = document.getElementById('fireBtn');
         this.boardBtnEl = document.getElementById('boardBtn');
         this.endTurnBtnEl = document.getElementById('endTurnBtn');
+        this.zoomInBtnEl = document.getElementById('zoomInBtn');
+        this.zoomOutBtnEl = document.getElementById('zoomOutBtn');
+        this.zoomResetBtnEl = document.getElementById('zoomResetBtn');
 
         if (this.moveBtnEl) this.moveBtnEl.addEventListener('click', this.moveButtonHandler);
         if (this.fireBtnEl) this.fireBtnEl.addEventListener('click', this.fireButtonHandler);
         if (this.boardBtnEl) this.boardBtnEl.addEventListener('click', this.boardButtonHandler);
         if (this.endTurnBtnEl) this.endTurnBtnEl.addEventListener('click', this.endTurnButtonHandler);
+        if (this.zoomInBtnEl) this.zoomInBtnEl.addEventListener('click', this.zoomInButtonHandler);
+        if (this.zoomOutBtnEl) this.zoomOutBtnEl.addEventListener('click', this.zoomOutButtonHandler);
+        if (this.zoomResetBtnEl) this.zoomResetBtnEl.addEventListener('click', this.zoomResetButtonHandler);
 
         document.addEventListener('keydown', this.keydownHandler);
+    }
+
+    applyZoomDelta(delta) {
+        if (!this.renderer || !this.renderer.camera) return;
+
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+
+        this.renderer.cancelCameraTransition();
+        this.renderer.camera.setZoom(this.renderer.camera.zoom + delta, centerX, centerY);
+        this.renderer.camera.clampToBounds(
+            this.canvas.width,
+            this.canvas.height,
+            this.game.map.width * this.renderer.tileSize,
+            this.game.map.height * this.renderer.tileSize
+        );
+    }
+
+    zoomIn() {
+        this.applyZoomDelta(0.25);
+    }
+
+    zoomOut() {
+        this.applyZoomDelta(-0.25);
+    }
+
+    resetZoom() {
+        if (!this.renderer || !this.renderer.camera) return;
+
+        this.renderer.cancelCameraTransition();
+        this.renderer.camera.reset();
+        this.renderer.camera.clampToBounds(
+            this.canvas.width,
+            this.canvas.height,
+            this.game.map.width * this.renderer.tileSize,
+            this.game.map.height * this.renderer.tileSize
+        );
+    }
+
+    getZoomShortcutAction(event) {
+        if (event.code === 'NumpadAdd' || event.key === '+' || event.key === '=') {
+            return 'in';
+        }
+
+        if (event.code === 'NumpadSubtract' || event.key === '-' || event.key === '_') {
+            return 'out';
+        }
+
+        return null;
+    }
+
+    shouldIgnoreZoomShortcut(event) {
+        const target = event.target;
+        if (!(target instanceof Element)) return false;
+        if (target.isContentEditable) return true;
+
+        return Boolean(target.closest('input, textarea, select, button, [role="slider"], [contenteditable="true"]'));
     }
 
     getCanvasPoint(clientX, clientY) {
@@ -70,6 +151,11 @@ export class InputHandler {
     }
 
     handleCanvasClick(event) {
+        if (this.mouseState.suppressNextClick) {
+            this.mouseState.suppressNextClick = false;
+            return;
+        }
+
         const point = this.getCanvasPoint(event.clientX, event.clientY);
         const gridPos = this.renderer.screenToGrid(point.x, point.y);
         if (this.game.map.isValidPosition(gridPos.x, gridPos.y)) {
@@ -81,6 +167,57 @@ export class InputHandler {
     handleCanvasHover(event) {
         const point = this.getCanvasPoint(event.clientX, event.clientY);
         this.renderer.screenToGrid(point.x, point.y);
+    }
+
+    handleMouseDown(event) {
+        if (event.button !== 0) return;
+
+        this.mouseState.active = true;
+        this.mouseState.startX = event.clientX;
+        this.mouseState.startY = event.clientY;
+        this.mouseState.lastX = event.clientX;
+        this.mouseState.lastY = event.clientY;
+        this.mouseState.panning = false;
+    }
+
+    handleMouseMove(event) {
+        if (!this.mouseState.active) return;
+
+        if ((event.buttons & 1) !== 1) {
+            this.mouseState.active = false;
+            this.mouseState.panning = false;
+            return;
+        }
+
+        const dx = event.clientX - this.mouseState.lastX;
+        const dy = event.clientY - this.mouseState.lastY;
+        const totalDx = event.clientX - this.mouseState.startX;
+        const totalDy = event.clientY - this.mouseState.startY;
+        const movedEnough = Math.hypot(totalDx, totalDy) > 8;
+
+        if (movedEnough && this.renderer.camera.zoom > 1) {
+            this.mouseState.panning = true;
+            this.mouseState.suppressNextClick = true;
+            this.renderer.cancelCameraTransition();
+            this.renderer.camera.pan(dx, dy);
+            this.renderer.camera.clampToBounds(
+                this.canvas.width,
+                this.canvas.height,
+                this.game.map.width * this.renderer.tileSize,
+                this.game.map.height * this.renderer.tileSize
+            );
+            event.preventDefault();
+        }
+
+        this.mouseState.lastX = event.clientX;
+        this.mouseState.lastY = event.clientY;
+    }
+
+    handleMouseUp(event) {
+        if (event.button !== 0 || !this.mouseState.active) return;
+
+        this.mouseState.active = false;
+        this.mouseState.panning = false;
     }
 
     handleTouchStart(event) {
@@ -160,6 +297,17 @@ export class InputHandler {
     }
 
     handleKeyPress(event) {
+        const zoomAction = this.getZoomShortcutAction(event);
+        if (zoomAction && !this.shouldIgnoreZoomShortcut(event)) {
+            event.preventDefault();
+            if (zoomAction === 'in') {
+                this.zoomIn();
+            } else {
+                this.zoomOut();
+            }
+            return;
+        }
+
         switch (event.key) {
             case 'Escape': this.game.cancelActionMode(); this.updateUI(); break;
             case 'm': case 'M': if (this.game.selectedShip) { this.game.enterMoveMode(); this.updateUI(); } break;
@@ -214,15 +362,21 @@ export class InputHandler {
         if (this.canvas) {
             this.canvas.removeEventListener('click', this.canvasClickHandler);
             this.canvas.removeEventListener('mousemove', this.canvasHoverHandler);
+            this.canvas.removeEventListener('mousedown', this.mouseDownHandler);
             this.canvas.removeEventListener('touchstart', this.touchStartHandler);
             this.canvas.removeEventListener('touchmove', this.touchMoveHandler);
             this.canvas.removeEventListener('touchend', this.touchEndHandler);
             this.canvas.removeEventListener('touchcancel', this.touchEndHandler);
         }
+        document.removeEventListener('mousemove', this.mouseMoveHandler);
+        document.removeEventListener('mouseup', this.mouseUpHandler);
         if (this.moveBtnEl) this.moveBtnEl.removeEventListener('click', this.moveButtonHandler);
         if (this.fireBtnEl) this.fireBtnEl.removeEventListener('click', this.fireButtonHandler);
         if (this.boardBtnEl) this.boardBtnEl.removeEventListener('click', this.boardButtonHandler);
         if (this.endTurnBtnEl) this.endTurnBtnEl.removeEventListener('click', this.endTurnButtonHandler);
+        if (this.zoomInBtnEl) this.zoomInBtnEl.removeEventListener('click', this.zoomInButtonHandler);
+        if (this.zoomOutBtnEl) this.zoomOutBtnEl.removeEventListener('click', this.zoomOutButtonHandler);
+        if (this.zoomResetBtnEl) this.zoomResetBtnEl.removeEventListener('click', this.zoomResetButtonHandler);
         document.removeEventListener('keydown', this.keydownHandler);
     }
 }
