@@ -1158,6 +1158,14 @@ body.startup-overlay-active .game-container {
         display: none;
     }
 
+    .game-container.is-header-collapsed .mobile-ui-toggle-header {
+        position: fixed;
+        left: 16px;
+        top: calc(env(safe-area-inset-top, 0px) + 30px);
+        z-index: 950;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+    }
+
     .game-container.is-footer-collapsed .game-footer {
         padding: 6px 10px;
     }
@@ -1170,6 +1178,14 @@ body.startup-overlay-active .game-container {
     .game-container.is-footer-collapsed .footer-top-row {
         justify-content: flex-end;
         margin-bottom: 0;
+    }
+
+    .game-container.is-footer-collapsed .mobile-ui-toggle-footer {
+        position: fixed;
+        right: 16px;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 30px);
+        z-index: 950;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
     }
 }
 
