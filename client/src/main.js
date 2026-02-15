@@ -3,6 +3,7 @@ import { Renderer } from './ui/Renderer.js';
 import { InputHandler } from './core/InputHandler.js';
 import { ShipPanel } from './ui/ShipPanel.js';
 import { SettingsMenu } from './ui/SettingsMenu.js';
+import { InGameSettingsPanel } from './ui/InGameSettingsPanel.js';
 import { SplashScreen } from './ui/SplashScreen.js';
 import { AudioManager } from './audio/AudioManager.js';
 
@@ -14,6 +15,7 @@ class GameApp {
         this.inputHandler = null;
         this.shipPanel = null;
         this.settingsMenu = null;
+        this.inGameSettingsPanel = null;
         this.splashScreen = null;
         this.audioManager = new AudioManager();
         this.audioManager.setupGlobalUIHoverSound();
@@ -77,10 +79,36 @@ class GameApp {
 
         // Start render loop
         this.start();
+
+        // Create in-game audio settings panel
+        const settingsRef = this.settingsMenu ? this.settingsMenu.getSettings() : {
+            fogEnabled: true,
+            combatDetailLevel: 'detailed',
+            audio: { masterVolume: 70, effectsVolume: 80, uiVolume: 70, muted: false }
+        };
+        this.inGameSettingsPanel = new InGameSettingsPanel(
+            settingsRef,
+            this.audioManager,
+            () => { if (this.game && this.game.hud) this.game.hud.closeCombatFeed(); },
+            null
+        );
+
+        // Wire up mutual exclusion: opening combat feed closes settings panel
+        if (this.game && this.game.hud) {
+            this.game.hud.setOnFeedOpen(() => {
+                if (this.inGameSettingsPanel) this.inGameSettingsPanel.close();
+            });
+        }
     }
 
     restart() {
         console.log('Restarting game...');
+
+        // Close in-game settings panel if open
+        if (this.inGameSettingsPanel) {
+            this.inGameSettingsPanel.close();
+            this.inGameSettingsPanel = null;
+        }
 
         // Hide game over modal
         document.getElementById('gameOverModal').classList.add('hidden');

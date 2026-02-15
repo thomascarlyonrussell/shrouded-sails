@@ -39,6 +39,10 @@
                         </span>
                         <span id="combatFeedUnread" class="combat-feed-unread hidden">0</span>
                     </button>
+                    <button id="inGameSettingsButton" class="in-game-settings-button" type="button"
+                            aria-expanded="false" aria-controls="inGameSettingsPanel" title="Audio Settings">
+                        <span class="in-game-settings-icon" aria-hidden="true">&#9881;</span>
+                    </button>
                 </div>
             </div>
         </header>
@@ -187,6 +191,41 @@
         <p class="combat-feed-panel-subtitle">Newest events first. Click an entry to expand details.</p>
         <div id="combatLogEmpty" class="combat-log-empty">No combat yet. Fire cannons or board an enemy ship to create entries.</div>
         <div id="combatLogList" class="combat-log-list"></div>
+    </aside>
+
+    <div id="inGameSettingsBackdrop" class="in-game-settings-backdrop hidden"></div>
+    <aside id="inGameSettingsPanel" class="in-game-settings-panel hidden" aria-label="Audio Settings">
+        <div class="in-game-settings-panel-header">
+            <h3>Audio Settings</h3>
+            <button id="inGameSettingsClose" class="in-game-settings-close" type="button" aria-label="Close audio settings">Close</button>
+        </div>
+        <div class="in-game-settings-body">
+            <div class="setting-item">
+                <label for="igMuteAllCheckbox" class="setting-label">
+                    <input type="checkbox" id="igMuteAllCheckbox">
+                    <span class="setting-title">Mute All</span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <div class="audio-controls">
+                    <div class="audio-control-row">
+                        <label for="igMasterVolumeSlider" class="audio-control-label">Master Volume</label>
+                        <span id="igMasterVolumeValue" class="audio-control-value">70%</span>
+                        <input type="range" id="igMasterVolumeSlider" min="0" max="100" step="1" value="70" class="audio-slider">
+                    </div>
+                    <div class="audio-control-row">
+                        <label for="igEffectsVolumeSlider" class="audio-control-label">Effects Volume</label>
+                        <span id="igEffectsVolumeValue" class="audio-control-value">80%</span>
+                        <input type="range" id="igEffectsVolumeSlider" min="0" max="100" step="1" value="80" class="audio-slider">
+                    </div>
+                    <div class="audio-control-row">
+                        <label for="igUiVolumeSlider" class="audio-control-label">UI Volume</label>
+                        <span id="igUiVolumeValue" class="audio-control-value">70%</span>
+                        <input type="range" id="igUiVolumeSlider" min="0" max="100" step="1" value="70" class="audio-slider">
+                    </div>
+                </div>
+            </div>
+        </div>
     </aside>
 
     <script type="module" src="./src/main.js"></script>

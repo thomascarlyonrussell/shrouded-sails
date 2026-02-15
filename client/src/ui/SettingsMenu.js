@@ -198,6 +198,13 @@ export class SettingsMenu {
 
     show() {
         if (this.menuElement) {
+            // Re-sync audio UI in case values changed via in-game panel
+            if (this.muteAllCheckbox) this.muteAllCheckbox.checked = this.settings.audio.muted;
+            if (this.masterVolumeSlider) this.masterVolumeSlider.value = String(this.settings.audio.masterVolume);
+            if (this.effectsVolumeSlider) this.effectsVolumeSlider.value = String(this.settings.audio.effectsVolume);
+            if (this.uiVolumeSlider) this.uiVolumeSlider.value = String(this.settings.audio.uiVolume);
+            this.updateAudioValueLabels();
+
             this.menuElement.classList.remove('hidden');
             this.applyAudioSettingsLive();
             if (this.audioManager) {

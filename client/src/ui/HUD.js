@@ -20,6 +20,7 @@ export class HUD {
         };
         this.combatDetailLevel = 'detailed';
         this.audioManager = null;
+        this.onFeedOpen = null;
 
         this.setupFeedControls();
         this.updateFeedSignal();
@@ -27,6 +28,10 @@ export class HUD {
 
     setAudioManager(audioManager) {
         this.audioManager = audioManager;
+    }
+
+    setOnFeedOpen(callback) {
+        this.onFeedOpen = callback;
     }
 
     setupFeedControls() {
@@ -50,6 +55,7 @@ export class HUD {
     }
 
     openCombatFeed() {
+        if (this.onFeedOpen) this.onFeedOpen();
         this.isFeedOpen = true;
         if (this.combatFeedPanelEl) {
             this.combatFeedPanelEl.classList.remove('hidden');

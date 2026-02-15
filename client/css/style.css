@@ -472,6 +472,102 @@ body.startup-overlay-active .game-container {
     display: none;
 }
 
+/* In-Game Settings Button */
+.in-game-settings-button {
+    border: 1px solid rgba(120, 155, 186, 0.45);
+    background: linear-gradient(135deg, rgba(19, 32, 46, 0.96) 0%, rgba(14, 24, 36, 0.96) 100%);
+    color: #e4edf5;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.in-game-settings-button:hover {
+    border-color: rgba(156, 194, 227, 0.65);
+}
+
+.in-game-settings-icon {
+    line-height: 1;
+}
+
+/* In-Game Settings Backdrop & Panel */
+.in-game-settings-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 850;
+}
+
+.in-game-settings-backdrop.hidden {
+    display: none;
+}
+
+.in-game-settings-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(380px, 92vw);
+    height: 100vh;
+    background: linear-gradient(180deg, #101c2a 0%, #0c1520 100%);
+    border-left: 2px solid #2e4d6d;
+    box-shadow: -12px 0 32px rgba(0, 0, 0, 0.45);
+    z-index: 900;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+.in-game-settings-panel.hidden {
+    display: none;
+}
+
+.in-game-settings-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.in-game-settings-panel-header h3 {
+    margin: 0;
+    font-size: 20px;
+    letter-spacing: 0.4px;
+}
+
+.in-game-settings-close {
+    border: 1px solid rgba(128, 165, 196, 0.4);
+    background: rgba(22, 39, 56, 0.92);
+    color: #d7e5f2;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.in-game-settings-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.in-game-settings-body .setting-item {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: rgba(44, 95, 141, 0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(44, 95, 141, 0.4);
+}
+
+.in-game-settings-body .audio-controls {
+    margin-left: 0;
+    margin-top: 0;
+}
+
 .ship-info {
     margin-bottom: 10px;
     font-size: 16px;
@@ -928,6 +1024,10 @@ body.startup-overlay-active .game-container {
     .header-zone-right .combat-feed-button {
         width: 100%;
         min-width: 0;
+    }
+
+    .in-game-settings-panel {
+        width: 100vw;
     }
 
     .game-board {
