@@ -4,6 +4,7 @@ import { InputHandler } from './core/InputHandler.js';
 import { ShipPanel } from './ui/ShipPanel.js';
 import { SettingsMenu } from './ui/SettingsMenu.js';
 import { InGameSettingsPanel } from './ui/InGameSettingsPanel.js';
+import { BugReportModal } from './ui/BugReportModal.js';
 import { SplashScreen } from './ui/SplashScreen.js';
 import { TutorialTour } from './ui/TutorialTour.js';
 import { AudioManager } from './audio/AudioManager.js';
@@ -17,6 +18,7 @@ class GameApp {
         this.shipPanel = null;
         this.settingsMenu = null;
         this.inGameSettingsPanel = null;
+        this.bugReportModal = null;
         this.splashScreen = null;
         this.tutorialTour = null;
         this.audioManager = new AudioManager();
@@ -44,6 +46,24 @@ class GameApp {
             combatDetailLevel: 'detailed',
             boardLayout: 'landscape',
             audio: { masterVolume: 70, effectsVolume: 80, uiVolume: 70, muted: false }
+        };
+    }
+
+    buildBugReportContext() {
+        const settings = this.settingsMenu ? this.settingsMenu.getSettings() : null;
+        return {
+            timestamp: new Date().toISOString(),
+            pageUrl: window.location.href,
+            userAgent: navigator.userAgent,
+            viewport: {
+                width: window.innerWidth,
+                height: window.innerHeight
+            },
+            boardLayout: this.game?.boardLayout || settings?.boardLayout || 'landscape',
+            turn: this.game?.turnNumber ?? null,
+            currentPlayer: this.game?.currentPlayer ?? null,
+            fogEnabled: this.game?.fogEnabled ?? settings?.fogEnabled ?? null,
+            combatDetailLevel: this.game?.hud?.combatDetailLevel || settings?.combatDetailLevel || 'detailed'
         };
     }
 
@@ -130,8 +150,17 @@ class GameApp {
             settingsRef,
             this.audioManager,
             () => { if (this.game && this.game.hud) this.game.hud.closeCombatFeed(); },
-            null
+            null,
+            () => {
+                if (this.bugReportModal) {
+                    this.bugReportModal.open();
+                }
+            }
         );
+        this.bugReportModal = new BugReportModal({
+            audioManager: this.audioManager,
+            getContext: () => this.buildBugReportContext()
+        });
 
         // Wire up mutual exclusion: opening combat feed closes settings panel
         if (this.game && this.game.hud) {
@@ -189,6 +218,10 @@ class GameApp {
         if (this.inGameSettingsPanel) {
             this.inGameSettingsPanel.destroy();
             this.inGameSettingsPanel = null;
+        }
+        if (this.bugReportModal) {
+            this.bugReportModal.destroy();
+            this.bugReportModal = null;
         }
 
         if (this.inputHandler) {

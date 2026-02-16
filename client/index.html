@@ -347,8 +347,32 @@
                     </div>
                 </div>
             </div>
+            <div class="setting-item">
+                <button id="reportBugBtn" class="action-btn danger report-bug-btn" type="button">Report Feedback/Bug</button>
+            </div>
         </div>
     </aside>
+
+    <div id="bugReportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="bugReportTitle">
+        <div class="modal-content bug-report-modal">
+            <h2 id="bugReportTitle">Report Feedback / Bug</h2>
+            <p class="bug-report-intro">Send a report to the GitHub issue tracker. Device and game context is attached automatically.</p>
+            <form id="bugReportForm" class="bug-report-form" novalidate>
+                <label for="bugReportTitleInput" class="bug-report-label">Title</label>
+                <input id="bugReportTitleInput" class="bug-report-input" type="text" maxlength="120" required>
+
+                <label for="bugReportDescriptionInput" class="bug-report-label">Description</label>
+                <textarea id="bugReportDescriptionInput" class="bug-report-textarea" maxlength="5000" rows="8" required></textarea>
+
+                <div id="bugReportStatus" class="bug-report-status" aria-live="polite"></div>
+
+                <div class="settings-actions">
+                    <button id="bugReportSubmitBtn" class="action-btn primary" type="submit">Submit Report</button>
+                    <button id="bugReportCancelBtn" class="action-btn" type="button">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script type="module" src="./src/main.js"></script>
 </body>

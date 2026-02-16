@@ -1,9 +1,10 @@
 export class InGameSettingsPanel {
-    constructor(settingsRef, audioManager, onOpen = null, onClose = null) {
+    constructor(settingsRef, audioManager, onOpen = null, onClose = null, onReportBug = null) {
         this.settings = settingsRef;
         this.audioManager = audioManager;
         this.onOpen = onOpen;
         this.onClose = onClose;
+        this.onReportBug = onReportBug;
         this.storageKey = 'shrouded_sails_settings_v1';
         this.isOpen = false;
 
@@ -20,9 +21,16 @@ export class InGameSettingsPanel {
         this.effectsValue = document.getElementById('igEffectsVolumeValue');
         this.uiValue = document.getElementById('igUiVolumeValue');
         this.musicValue = document.getElementById('igMusicVolumeValue');
+        this.reportBugBtn = document.getElementById('reportBugBtn');
         this.boundToggle = () => this.toggle();
         this.boundClose = () => this.close();
         this.boundBackdropClose = () => this.close();
+        this.boundReportBug = () => {
+            this.close();
+            if (typeof this.onReportBug === 'function') {
+                this.onReportBug();
+            }
+        };
         this.boundMuteChange = (e) => {
             this.settings.audio.muted = e.target.checked;
             this.applyAndSave();
@@ -64,6 +72,9 @@ export class InGameSettingsPanel {
         }
         if (this.backdropEl) {
             this.backdropEl.addEventListener('click', this.boundBackdropClose);
+        }
+        if (this.reportBugBtn) {
+            this.reportBugBtn.addEventListener('click', this.boundReportBug);
         }
 
         this.setupAudioControls();
@@ -174,6 +185,9 @@ export class InGameSettingsPanel {
         }
         if (this.backdropEl) {
             this.backdropEl.removeEventListener('click', this.boundBackdropClose);
+        }
+        if (this.reportBugBtn) {
+            this.reportBugBtn.removeEventListener('click', this.boundReportBug);
         }
 
         if (this.muteCheckbox) {

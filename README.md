@@ -75,6 +75,45 @@ The project deploys to [Vercel](https://vercel.com/) automatically on push to `m
 - **Frontend**: Built by Vite and served as static files from `client/dist/`
 - **Backend**: Deployed as Vercel serverless functions with Bun runtime
 
+### Bug Report API
+
+The game includes an in-game **Report Bug** flow that creates GitHub issues through:
+
+- `POST /api/submit-issue`
+- `GET /api/health`
+
+`/api/submit-issue` accepts JSON:
+
+```json
+{
+  "title": "string",
+  "description": "string",
+  "context": {}
+}
+```
+
+Response shape:
+
+- Success `201`: `{ "ok": true, "issueNumber": number, "issueUrl": string }`
+- Validation `400`: `{ "ok": false, "error": string, "fieldErrors": object }`
+- Rate limit `429`: `{ "ok": false, "error": string }`
+- Upstream/server `5xx`: `{ "ok": false, "error": string }`
+
+#### Required Environment Variable
+
+Set this in Vercel project settings:
+
+- `GITHUB_TOKEN`: GitHub personal access token with repository issue write access.
+
+Issue creation targets `thomascarlyonrussell/shrouded-sails` and attempts to apply
+the `player-report` label. If the label is invalid/missing, the API retries once
+without labels so reports are still created.
+
+#### Abuse Guard
+
+`/api/submit-issue` enforces a lightweight per-IP in-memory limit of 3 submissions
+per 10-minute window.
+
 ### Manual Deploy
 
 ```bash
