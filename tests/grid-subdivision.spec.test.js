@@ -6,7 +6,7 @@ import { GameMap } from '../client/src/map/GameMap.js';
 import { Camera } from '../client/src/ui/Camera.js';
 import { Wind } from '../client/src/map/Wind.js';
 import { Fleet } from '../client/src/entities/Fleet.js';
-import { MAP_GENERATION } from '../shared/constants.js';
+import { MAP_GENERATION, SHIP_TYPES } from '../shared/constants.js';
 import { FogOfWar } from '../client/src/fog/FogOfWar.js';
 import { BoardingSystem } from '../client/src/combat/BoardingSystem.js';
 import { CombatResolver } from '../client/src/combat/CombatResolver.js';
@@ -176,6 +176,47 @@ test('Fleet deployment respects scaled edge buffer and full starting zone footpr
     for (const ship of fleet.ships) {
         assert(ship.x >= MAP_GENERATION.EDGE_BUFFER, `Anchor x below edge buffer: ${ship.x}`);
         assert(map.isFootprintInStartingZone(ship.x, ship.y, ship.footprint, ship.orientation));
+    }
+});
+
+test('Fleet placement logic provides symmetric multi-tile valid anchors between sides', () => {
+    const layouts = ['landscape', 'portrait'];
+
+    for (const layout of layouts) {
+        const setupFleet = (owner) => {
+            const localMap = new GameMap(layout);
+            clearMapWater(localMap);
+            const fleet = Object.create(Fleet.prototype);
+            fleet.owner = owner;
+            fleet.ships = [];
+            return { fleet, localMap, positions: fleet.getStartingPositions(localMap) };
+        };
+
+        const player1 = setupFleet('player1');
+        const player2 = setupFleet('player2');
+
+        const countValid = (fleet, localMap, positions, type) => {
+            const shipType = type;
+            const orientation = shipType === 2 ? 'horizontal' : 'horizontal';
+            return positions.filter(pos => fleet.canPlaceShipAtPosition(
+                localMap,
+                pos,
+                SHIP_TYPES[shipType].footprint,
+                orientation
+            )).length;
+        };
+
+        assert.equal(
+            countValid(player1.fleet, player1.localMap, player1.positions, 2),
+            countValid(player2.fleet, player2.localMap, player2.positions, 2),
+            `${layout}: frigate valid anchor count should be symmetric`
+        );
+
+        assert.equal(
+            countValid(player1.fleet, player1.localMap, player1.positions, 3),
+            countValid(player2.fleet, player2.localMap, player2.positions, 3),
+            `${layout}: flagship valid anchor count should be symmetric`
+        );
     }
 });
 

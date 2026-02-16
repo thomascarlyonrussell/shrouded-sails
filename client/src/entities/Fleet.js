@@ -16,16 +16,9 @@ export class Fleet {
                 const shipType = SHIP_TYPES[shipSpec.type];
                 const orientation = shipSpec.type === 2 ? 'horizontal' : 'horizontal';
                 const candidateIndex = startingPositions.findIndex(pos => {
-                    const check = gameMap.isFootprintClear(
-                        pos.x,
-                        pos.y,
-                        shipType.footprint,
-                        orientation,
-                        null
-                    );
-                    return check.clear && gameMap.isFootprintInStartingZone(
-                        pos.x,
-                        pos.y,
+                    return this.canPlaceShipAtPosition(
+                        gameMap,
+                        pos,
                         shipType.footprint,
                         orientation
                     );
@@ -39,6 +32,35 @@ export class Fleet {
                 gameMap.addShip(ship);
             }
         }
+    }
+
+    canPlaceShipAtPosition(gameMap, pos, footprint = { width: 1, height: 1 }, orientation = 'horizontal') {
+        const orientedFootprint = gameMap.getOrientedFootprint(footprint, orientation);
+
+        if (gameMap.layout === 'landscape' && this.owner === 'player2') {
+            const maxX = gameMap.width - MAP_GENERATION.EDGE_BUFFER - orientedFootprint.width;
+            if (pos.x > maxX) return false;
+        }
+
+        if (gameMap.layout === 'portrait' && this.owner === 'player2') {
+            const maxY = gameMap.height - MAP_GENERATION.EDGE_BUFFER - orientedFootprint.height;
+            if (pos.y > maxY) return false;
+        }
+
+        const check = gameMap.isFootprintClear(
+            pos.x,
+            pos.y,
+            footprint,
+            orientation,
+            null
+        );
+
+        return check.clear && gameMap.isFootprintInStartingZone(
+            pos.x,
+            pos.y,
+            footprint,
+            orientation
+        );
     }
 
     getStartingPositions(gameMap) {
