@@ -8,6 +8,7 @@ import { BugReportModal } from './ui/BugReportModal.js';
 import { SplashScreen } from './ui/SplashScreen.js';
 import { TutorialTour } from './ui/TutorialTour.js';
 import { AudioManager } from './audio/AudioManager.js';
+import { inject } from '@vercel/analytics';
 
 class GameApp {
     constructor() {
@@ -382,6 +383,9 @@ class GameApp {
 
 // Start game when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    if (import.meta.env.PROD) {
+        inject();
+    }
     const game = new GameApp();
     game.showSplashThenSettings();
 });
