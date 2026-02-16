@@ -110,7 +110,7 @@ export class InGameSettingsPanel {
         if (this.masterSlider) this.masterSlider.value = String(this.settings.audio.masterVolume);
         if (this.effectsSlider) this.effectsSlider.value = String(this.settings.audio.effectsVolume);
         if (this.uiSlider) this.uiSlider.value = String(this.settings.audio.uiVolume);
-        if (this.musicSlider) this.musicSlider.value = String(this.settings.audio.musicVolume || 50);
+        if (this.musicSlider) this.musicSlider.value = String(this.settings.audio.musicVolume ?? 50);
         this.updateValueLabels();
     }
 
@@ -118,7 +118,7 @@ export class InGameSettingsPanel {
         if (this.masterValue) this.masterValue.textContent = `${this.settings.audio.masterVolume}%`;
         if (this.effectsValue) this.effectsValue.textContent = `${this.settings.audio.effectsVolume}%`;
         if (this.uiValue) this.uiValue.textContent = `${this.settings.audio.uiVolume}%`;
-        if (this.musicValue) this.musicValue.textContent = `${this.settings.audio.musicVolume || 50}%`;
+        if (this.musicValue) this.musicValue.textContent = `${this.settings.audio.musicVolume ?? 50}%`;
     }
 
     toggle() {
