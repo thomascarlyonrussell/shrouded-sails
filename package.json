@@ -14,7 +14,7 @@
     "dev:server": "bun run server/index.ts",
     "build:client": "npm run build -w client",
     "preview:client": "npm run preview -w client",
-    "test:logic": "node --test tests/grid-subdivision.spec.test.js tests/issue-report-helpers.spec.test.js"
+    "test:logic": "node --test tests/grid-subdivision.spec.test.js tests/issue-report-helpers.spec.test.js tests/atmosphere-math.spec.test.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

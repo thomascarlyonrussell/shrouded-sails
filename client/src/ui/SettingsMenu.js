@@ -5,6 +5,7 @@ export class SettingsMenu {
         this.audioManager = audioManager;
         this.defaultSettings = {
             fogEnabled: true,  // Default to enabled
+            atmosphereEffectsEnabled: true,
             boardLayout: 'landscape',
             combatDetailLevel: 'detailed',
             audio: {
@@ -19,6 +20,7 @@ export class SettingsMenu {
 
         this.menuElement = null;
         this.fogCheckbox = null;
+        this.atmosphereEffectsCheckbox = null;
         this.combatDetailSelect = null;
         this.muteAllCheckbox = null;
         this.masterVolumeSlider = null;
@@ -63,6 +65,7 @@ export class SettingsMenu {
         merged.audio.muted = Boolean(merged.audio.muted);
         merged.combatDetailLevel = merged.combatDetailLevel === 'compact' ? 'compact' : 'detailed';
         merged.fogEnabled = Boolean(merged.fogEnabled);
+        merged.atmosphereEffectsEnabled = merged.atmosphereEffectsEnabled !== false;
         merged.boardLayout = merged.boardLayout === 'portrait' ? 'portrait' : 'landscape';
 
         return merged;
@@ -107,6 +110,7 @@ export class SettingsMenu {
         // Get or create menu elements
         this.menuElement = document.getElementById('settingsModal');
         this.fogCheckbox = document.getElementById('fogOfWarCheckbox');
+        this.atmosphereEffectsCheckbox = document.getElementById('atmosphereEffectsCheckbox');
         this.combatDetailSelect = document.getElementById('combatDetailLevelSelect');
         this.boardLayoutSelect = document.getElementById('boardLayoutSelect');
         this.muteAllCheckbox = document.getElementById('muteAllCheckbox');
@@ -128,6 +132,9 @@ export class SettingsMenu {
 
         // Set initial checkbox state
         this.fogCheckbox.checked = this.settings.fogEnabled;
+        if (this.atmosphereEffectsCheckbox) {
+            this.atmosphereEffectsCheckbox.checked = this.settings.atmosphereEffectsEnabled;
+        }
         if (this.combatDetailSelect) {
             this.combatDetailSelect.value = this.settings.combatDetailLevel;
         }
@@ -161,6 +168,14 @@ export class SettingsMenu {
             console.log(`Fog of War: ${this.settings.fogEnabled ? 'Enabled' : 'Disabled'}`);
             this.saveSettings();
         });
+
+        if (this.atmosphereEffectsCheckbox) {
+            this.atmosphereEffectsCheckbox.addEventListener('change', (e) => {
+                this.settings.atmosphereEffectsEnabled = e.target.checked;
+                console.log(`Atmospheric Fog Effects: ${this.settings.atmosphereEffectsEnabled ? 'Enabled' : 'Disabled'}`);
+                this.saveSettings();
+            });
+        }
 
         if (this.combatDetailSelect) {
             this.combatDetailSelect.addEventListener('change', (e) => {

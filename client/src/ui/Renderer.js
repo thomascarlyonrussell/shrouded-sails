@@ -1,5 +1,11 @@
-import { GRID, COLORS } from '../../../shared/constants.js';
+import { GRID, COLORS, ATMOSPHERE, FOG_VISUALS } from '../../../shared/constants.js';
 import { Camera } from './Camera.js';
+import {
+    buildVisibilityDistanceMap,
+    getFogOpacityForDistance,
+    getWindAtmosphereTarget,
+    hasUnseenNeighbor
+} from './AtmosphereMath.js';
 
 export class Renderer {
     constructor(canvas, gameMap, game) {
@@ -15,7 +21,22 @@ export class Renderer {
         this.fogCacheCanvas = null;
         this.fogCacheCtx = null;
         this.fogCacheKey = null;
+        this.fogVisibilityStateKey = null;
+        this.fogVisibleTilesCache = new Set();
+        this.fogVisibleTilesHash = 0;
         this.cameraTransition = null;
+        this.atmosphereConfig = ATMOSPHERE;
+        this.fogVisualConfig = FOG_VISUALS;
+        this.waterAtmosphereCanvas = null;
+        this.waterAtmosphereCtx = null;
+        this.mistTextureCanvas = null;
+        this.mistTextureCtx = null;
+        this.mistOffsetX = 0;
+        this.mistOffsetY = 0;
+        this.mistVelocityX = 0;
+        this.mistVelocityY = 0;
+        this.mistAlpha = this.atmosphereConfig.MIST.BASE_ALPHA;
+        this.lastAtmosphereTick = performance.now();
 
         this.canvas.width = this.gameMap.width * this.tileSize;
         this.canvas.height = this.gameMap.height * this.tileSize;
@@ -23,14 +44,18 @@ export class Renderer {
 
     render(hoveredShip = null) {
         this.hoveredShip = hoveredShip;
-        this.updateCameraTransition();
+        const now = performance.now();
+        this.updateCameraTransition(now);
         const shakeOffset = this.getCurrentShakeOffset();
 
         this.clear();
         this.ctx.save();
         this.ctx.setTransform(this.camera.zoom, 0, 0, this.camera.zoom, this.camera.offsetX + shakeOffset.x, this.camera.offsetY + shakeOffset.y);
+        this.drawWaterAtmosphere();
         this.drawMap();
+        this.drawAtmosphereMist(now);
         this.drawFogOverlay();  // Draw fog after terrain but before ships
+        this.drawAtmosphereVignette();
         this.drawValidMoveHighlights();
         this.drawMovementPreviewTiles();
         this.drawValidTargetHighlights();
@@ -182,6 +207,187 @@ export class Renderer {
         this.ctx.setTransform(1, 0, 0, 1, 0, 0);
         this.ctx.fillStyle = COLORS.WATER;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    isAtmosphereEffectsEnabled() {
+        return this.atmosphereConfig.ENABLED && this.game?.atmosphereEffectsEnabled !== false;
+    }
+
+    drawWaterAtmosphere() {
+        if (!this.isAtmosphereEffectsEnabled()) return;
+
+        this.ensureWaterAtmosphereCanvas();
+        this.ctx.drawImage(this.waterAtmosphereCanvas, 0, 0);
+    }
+
+    ensureWaterAtmosphereCanvas() {
+        const boardWidth = this.gameMap.width * this.tileSize;
+        const boardHeight = this.gameMap.height * this.tileSize;
+
+        if (!this.waterAtmosphereCanvas) {
+            this.waterAtmosphereCanvas = document.createElement('canvas');
+            this.waterAtmosphereCtx = this.waterAtmosphereCanvas.getContext('2d');
+        }
+
+        if (this.waterAtmosphereCanvas.width === boardWidth && this.waterAtmosphereCanvas.height === boardHeight) {
+            return;
+        }
+
+        this.waterAtmosphereCanvas.width = boardWidth;
+        this.waterAtmosphereCanvas.height = boardHeight;
+
+        const cfg = this.atmosphereConfig.BASE_WATER;
+        const ctx = this.waterAtmosphereCtx;
+
+        ctx.clearRect(0, 0, boardWidth, boardHeight);
+
+        const gradient = ctx.createLinearGradient(0, 0, boardWidth, boardHeight);
+        gradient.addColorStop(0, cfg.SHALLOW_COLOR);
+        gradient.addColorStop(1, cfg.DEEP_COLOR);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, boardWidth, boardHeight);
+
+        const hazeGradient = ctx.createRadialGradient(
+            boardWidth * 0.5,
+            boardHeight * 0.46,
+            boardHeight * 0.08,
+            boardWidth * 0.5,
+            boardHeight * 0.46,
+            boardWidth * 0.8
+        );
+        hazeGradient.addColorStop(0, `rgba(225, 242, 255, ${cfg.HAZE_ALPHA})`);
+        hazeGradient.addColorStop(1, 'rgba(225, 242, 255, 0)');
+        ctx.fillStyle = hazeGradient;
+        ctx.fillRect(0, 0, boardWidth, boardHeight);
+
+        for (let i = 0; i < cfg.MOTTLE_COUNT; i++) {
+            const x = Math.random() * boardWidth;
+            const y = Math.random() * boardHeight;
+            const radius = cfg.MOTTLE_MIN_RADIUS + Math.random() * (cfg.MOTTLE_MAX_RADIUS - cfg.MOTTLE_MIN_RADIUS);
+            const alpha = cfg.MOTTLE_ALPHA_MIN + Math.random() * (cfg.MOTTLE_ALPHA_MAX - cfg.MOTTLE_ALPHA_MIN);
+            const mottle = ctx.createRadialGradient(x, y, radius * 0.18, x, y, radius);
+            mottle.addColorStop(0, `rgba(200, 232, 255, ${alpha})`);
+            mottle.addColorStop(1, 'rgba(200, 232, 255, 0)');
+            ctx.fillStyle = mottle;
+            ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+        }
+    }
+
+    drawAtmosphereMist(now = performance.now()) {
+        if (!this.isAtmosphereEffectsEnabled()) return;
+
+        this.ensureMistTextureCanvas();
+        this.updateMistDrift(now);
+
+        const boardWidth = this.gameMap.width * this.tileSize;
+        const boardHeight = this.gameMap.height * this.tileSize;
+        const textureSize = this.mistTextureCanvas.width;
+        const drawStartX = -textureSize + this.getTiledOffset(this.mistOffsetX, textureSize);
+        const drawStartY = -textureSize + this.getTiledOffset(this.mistOffsetY, textureSize);
+
+        this.ctx.save();
+        this.ctx.globalAlpha = this.mistAlpha;
+        for (let x = drawStartX; x < boardWidth + textureSize; x += textureSize) {
+            for (let y = drawStartY; y < boardHeight + textureSize; y += textureSize) {
+                this.ctx.drawImage(this.mistTextureCanvas, x, y, textureSize, textureSize);
+            }
+        }
+
+        const parallax = this.atmosphereConfig.MIST.LAYER_PARALLAX;
+        const layerTwoOffsetX = -textureSize + this.getTiledOffset(this.mistOffsetX * -parallax, textureSize);
+        const layerTwoOffsetY = -textureSize + this.getTiledOffset(this.mistOffsetY * -parallax, textureSize);
+        this.ctx.globalAlpha = this.mistAlpha * this.atmosphereConfig.MIST.LAYER_ALPHA_MULTIPLIER;
+        for (let x = layerTwoOffsetX; x < boardWidth + textureSize; x += textureSize) {
+            for (let y = layerTwoOffsetY; y < boardHeight + textureSize; y += textureSize) {
+                this.ctx.drawImage(this.mistTextureCanvas, x, y, textureSize, textureSize);
+            }
+        }
+        this.ctx.restore();
+    }
+
+    ensureMistTextureCanvas() {
+        const mistCfg = this.atmosphereConfig.MIST;
+        const size = mistCfg.TEXTURE_SIZE;
+
+        if (!this.mistTextureCanvas) {
+            this.mistTextureCanvas = document.createElement('canvas');
+            this.mistTextureCtx = this.mistTextureCanvas.getContext('2d');
+        }
+
+        if (this.mistTextureCanvas.width === size && this.mistTextureCanvas.height === size) {
+            return;
+        }
+
+        this.mistTextureCanvas.width = size;
+        this.mistTextureCanvas.height = size;
+
+        const ctx = this.mistTextureCtx;
+        ctx.clearRect(0, 0, size, size);
+
+        for (let i = 0; i < mistCfg.PUFF_COUNT; i++) {
+            const x = Math.random() * size;
+            const y = Math.random() * size;
+            const radius = size * (0.15 + Math.random() * 0.28);
+            const alpha = 0.045 + Math.random() * 0.07;
+            this.drawWrappedMistPuff(ctx, x, y, radius, alpha, size);
+        }
+    }
+
+    drawWrappedMistPuff(ctx, x, y, radius, alpha, size) {
+        for (const offsetX of [-size, 0, size]) {
+            for (const offsetY of [-size, 0, size]) {
+                const drawX = x + offsetX;
+                const drawY = y + offsetY;
+                const puff = ctx.createRadialGradient(drawX, drawY, radius * 0.2, drawX, drawY, radius);
+                puff.addColorStop(0, `rgba(235, 246, 255, ${alpha})`);
+                puff.addColorStop(1, 'rgba(235, 246, 255, 0)');
+                ctx.fillStyle = puff;
+                ctx.fillRect(drawX - radius, drawY - radius, radius * 2, radius * 2);
+            }
+        }
+    }
+
+    updateMistDrift(now = performance.now()) {
+        const elapsedMs = Math.max(0, now - this.lastAtmosphereTick);
+        this.lastAtmosphereTick = now;
+        const deltaSeconds = Math.min(0.1, elapsedMs / 1000);
+        if (deltaSeconds <= 0) return;
+
+        const target = getWindAtmosphereTarget(this.game.wind, this.atmosphereConfig.MIST);
+        const smoothing = this.atmosphereConfig.MIST.DRIFT_SMOOTHING;
+        const blend = 1 - Math.pow(1 - smoothing, deltaSeconds * 60);
+
+        this.mistVelocityX = this.lerp(this.mistVelocityX, target.velocityX, blend);
+        this.mistVelocityY = this.lerp(this.mistVelocityY, target.velocityY, blend);
+        this.mistAlpha = this.lerp(this.mistAlpha, target.alpha, blend);
+
+        this.mistOffsetX += this.mistVelocityX * deltaSeconds;
+        this.mistOffsetY += this.mistVelocityY * deltaSeconds;
+    }
+
+    getTiledOffset(value, size) {
+        if (!size) return 0;
+        return ((value % size) + size) % size;
+    }
+
+    drawAtmosphereVignette() {
+        if (!this.isAtmosphereEffectsEnabled() || !this.atmosphereConfig.VIGNETTE.ENABLED) return;
+
+        const boardWidth = this.gameMap.width * this.tileSize;
+        const boardHeight = this.gameMap.height * this.tileSize;
+        const alpha = this.atmosphereConfig.VIGNETTE.ALPHA;
+        const vignette = this.ctx.createRadialGradient(
+            boardWidth / 2,
+            boardHeight / 2,
+            Math.min(boardWidth, boardHeight) * 0.2,
+            boardWidth / 2,
+            boardHeight / 2,
+            Math.max(boardWidth, boardHeight) * 0.65
+        );
+        vignette.addColorStop(0, 'rgba(3, 8, 14, 0)');
+        vignette.addColorStop(1, `rgba(3, 8, 14, ${alpha})`);
+        this.ctx.fillStyle = vignette;
+        this.ctx.fillRect(0, 0, boardWidth, boardHeight);
     }
 
     getCurrentShakeOffset() {
@@ -1074,33 +1280,30 @@ export class Renderer {
         if (!this.game.fogOfWar) return;
 
         this.ensureFogCacheCanvas();
+        const advancedFogEnabled = this.isAtmosphereEffectsEnabled();
 
-        // Get visible tiles for current player.
-        const visibleTiles = this.game.fogOfWar.calculateVisionCoverage(this.game.currentPlayer);
-        const fogCacheKey = this.buildFogCacheKey(visibleTiles);
+        const visibilityStateKey = this.buildFogVisibilityStateKey();
+        if (this.fogVisibilityStateKey !== visibilityStateKey) {
+            this.fogVisibleTilesCache = this.game.fogOfWar.calculateVisionCoverage(this.game.currentPlayer);
+            this.fogVisibleTilesHash = this.hashTileSet(this.fogVisibleTilesCache);
+            this.fogVisibilityStateKey = visibilityStateKey;
+            this.fogCacheKey = null;
+        }
+
+        const visibleTiles = this.fogVisibleTilesCache;
+        const fogCacheKey = this.buildFogCacheKey(
+            visibilityStateKey,
+            this.fogVisibleTilesHash,
+            visibleTiles.size,
+            advancedFogEnabled
+        );
 
         if (this.fogCacheKey !== fogCacheKey) {
             this.fogCacheCtx.clearRect(0, 0, this.fogCacheCanvas.width, this.fogCacheCanvas.height);
-            this.fogCacheCtx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-
-            for (let y = 0; y < this.gameMap.height; y++) {
-                for (let x = 0; x < this.gameMap.width; x++) {
-                    const tile = this.gameMap.getTile(x, y);
-
-                    // Skip islands - they are always visible.
-                    if (tile.isIsland()) continue;
-
-                    // Skip tiles with friendly ships - always visible.
-                    const shipAtTile = this.gameMap.getShipAt(x, y);
-                    if (shipAtTile && shipAtTile.owner === this.game.currentPlayer) continue;
-
-                    const tileKey = `${x},${y}`;
-                    if (!visibleTiles.has(tileKey)) {
-                        const screenX = x * this.tileSize;
-                        const screenY = y * this.tileSize;
-                        this.fogCacheCtx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
-                    }
-                }
+            if (advancedFogEnabled) {
+                this.rebuildFogCacheLayer(visibleTiles);
+            } else {
+                this.rebuildClassicFogLayer(visibleTiles);
             }
 
             this.fogCacheKey = fogCacheKey;
@@ -1119,24 +1322,133 @@ export class Renderer {
             this.fogCacheCanvas.width = this.canvas.width;
             this.fogCacheCanvas.height = this.canvas.height;
             this.fogCacheKey = null;
+            this.fogVisibilityStateKey = null;
         }
     }
 
-    buildFogCacheKey(visibleTiles) {
+    rebuildFogCacheLayer(visibleTiles) {
+        const width = this.gameMap.width;
+        const height = this.gameMap.height;
+        const distanceMap = buildVisibilityDistanceMap(width, height, visibleTiles);
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const tile = this.gameMap.getTile(x, y);
+
+                // Islands always remain visible through fog.
+                if (tile.isIsland()) continue;
+
+                // Friendly ship tiles always remain visible.
+                const shipAtTile = this.gameMap.getShipAt(x, y);
+                if (shipAtTile && shipAtTile.owner === this.game.currentPlayer) continue;
+
+                const tileKey = `${x},${y}`;
+                if (visibleTiles.has(tileKey)) continue;
+
+                const distance = distanceMap[y * width + x];
+                const alpha = getFogOpacityForDistance(distance, this.fogVisualConfig);
+                if (alpha <= 0) continue;
+
+                const screenX = x * this.tileSize;
+                const screenY = y * this.tileSize;
+                this.fogCacheCtx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+                this.fogCacheCtx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+            }
+        }
+
+        this.applyFogBoundaryFeather(visibleTiles);
+    }
+
+    rebuildClassicFogLayer(visibleTiles) {
+        this.fogCacheCtx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+
+        for (let y = 0; y < this.gameMap.height; y++) {
+            for (let x = 0; x < this.gameMap.width; x++) {
+                const tile = this.gameMap.getTile(x, y);
+
+                // Islands stay visible.
+                if (tile.isIsland()) continue;
+
+                // Friendly ship tiles stay visible.
+                const shipAtTile = this.gameMap.getShipAt(x, y);
+                if (shipAtTile && shipAtTile.owner === this.game.currentPlayer) continue;
+
+                if (!visibleTiles.has(`${x},${y}`)) {
+                    const screenX = x * this.tileSize;
+                    const screenY = y * this.tileSize;
+                    this.fogCacheCtx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+                }
+            }
+        }
+    }
+
+    applyFogBoundaryFeather(visibleTiles) {
+        const width = this.gameMap.width;
+        const height = this.gameMap.height;
+        const featherAlpha = this.fogVisualConfig.FEATHER_ALPHA;
+        if (featherAlpha <= 0) return;
+
+        this.fogCacheCtx.save();
+        this.fogCacheCtx.globalCompositeOperation = 'destination-out';
+
+        for (const tileKey of visibleTiles) {
+            const [xRaw, yRaw] = tileKey.split(',');
+            const x = Number.parseInt(xRaw, 10);
+            const y = Number.parseInt(yRaw, 10);
+            if (!hasUnseenNeighbor(x, y, visibleTiles, width, height)) continue;
+
+            const centerX = x * this.tileSize + this.tileSize / 2;
+            const centerY = y * this.tileSize + this.tileSize / 2;
+            const radius = this.tileSize * 1.2;
+            const feather = this.fogCacheCtx.createRadialGradient(
+                centerX,
+                centerY,
+                this.tileSize * 0.25,
+                centerX,
+                centerY,
+                radius
+            );
+            feather.addColorStop(0, `rgba(0, 0, 0, ${featherAlpha})`);
+            feather.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            this.fogCacheCtx.fillStyle = feather;
+            this.fogCacheCtx.fillRect(centerX - radius, centerY - radius, radius * 2, radius * 2);
+        }
+
+        this.fogCacheCtx.restore();
+    }
+
+    hashTileSet(tileSet) {
         let hash = 2166136261;
-        for (const key of visibleTiles) {
+        for (const key of tileSet) {
             for (let i = 0; i < key.length; i++) {
                 hash ^= key.charCodeAt(i);
                 hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
             }
         }
+        return hash >>> 0;
+    }
 
+    buildFogVisibilityStateKey() {
         const friendlyState = this.game
             .getShipsByOwner(this.game.currentPlayer, false)
             .map(ship => `${ship.id}:${ship.x},${ship.y},${ship.orientation},${ship.isDestroyed ? 1 : 0}`)
             .join('|');
 
-        return `${this.game.currentPlayer}|${this.game.turnNumber}|${visibleTiles.size}|${hash >>> 0}|${friendlyState}`;
+        return `${this.game.currentPlayer}|${this.game.turnNumber}|${friendlyState}`;
+    }
+
+    buildFogCacheKey(visibilityStateKey, visibleHash, visibleCount, advancedFogEnabled = true) {
+        const fogStyleState = [
+            advancedFogEnabled ? 1 : 0,
+            this.fogVisualConfig.FRONTIER_DISTANCE,
+            this.fogVisualConfig.MID_DISTANCE,
+            this.fogVisualConfig.FRONTIER_ALPHA,
+            this.fogVisualConfig.MID_ALPHA,
+            this.fogVisualConfig.DEEP_ALPHA,
+            this.fogVisualConfig.FEATHER_ALPHA
+        ].join(',');
+
+        return `${visibilityStateKey}|${visibleCount}|${visibleHash}|${fogStyleState}`;
     }
 
     drawGhostShips() {

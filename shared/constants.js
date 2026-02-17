@@ -100,6 +100,44 @@ export const COLORS = {
     GRID_LINE: '#2c5f8d'
 };
 
+export const ATMOSPHERE = {
+    ENABLED: true,
+    BASE_WATER: {
+        DEEP_COLOR: '#152f4c',
+        SHALLOW_COLOR: '#25577c',
+        HAZE_ALPHA: 0.08,
+        MOTTLE_COUNT: 90,
+        MOTTLE_MIN_RADIUS: 36,
+        MOTTLE_MAX_RADIUS: 140,
+        MOTTLE_ALPHA_MIN: 0.015,
+        MOTTLE_ALPHA_MAX: 0.05
+    },
+    MIST: {
+        TEXTURE_SIZE: 256,
+        PUFF_COUNT: 40,
+        BASE_ALPHA: 0.085,
+        STRENGTH_ALPHA_SCALE: 0.059,
+        CALM_DRIFT_SPEED: 3.2,
+        STRENGTH_DRIFT_SCALE: 8.4,
+        DRIFT_SMOOTHING: 0.14,
+        LAYER_PARALLAX: 0.58,
+        LAYER_ALPHA_MULTIPLIER: 0.85
+    },
+    VIGNETTE: {
+        ENABLED: true,
+        ALPHA: 0.035
+    }
+};
+
+export const FOG_VISUALS = {
+    FRONTIER_DISTANCE: 2,
+    MID_DISTANCE: 5,
+    FRONTIER_ALPHA: 0.2,
+    MID_ALPHA: 0.28,
+    DEEP_ALPHA: 0.36,
+    FEATHER_ALPHA: 0.16
+};
+
 export const PLAYERS = {
     PLAYER1: 'player1',
     PLAYER2: 'player2'

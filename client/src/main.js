@@ -44,6 +44,7 @@ class GameApp {
     getDefaultSettings() {
         return {
             fogEnabled: true,
+            atmosphereEffectsEnabled: true,
             combatDetailLevel: 'detailed',
             boardLayout: 'landscape',
             audio: { masterVolume: 70, effectsVolume: 80, uiVolume: 70, muted: false }
@@ -64,6 +65,7 @@ class GameApp {
             turn: this.game?.turnNumber ?? null,
             currentPlayer: this.game?.currentPlayer ?? null,
             fogEnabled: this.game?.fogEnabled ?? settings?.fogEnabled ?? null,
+            atmosphereEffectsEnabled: this.game?.atmosphereEffectsEnabled ?? settings?.atmosphereEffectsEnabled ?? null,
             combatDetailLevel: this.game?.hud?.combatDetailLevel || settings?.combatDetailLevel || 'detailed'
         };
     }
@@ -89,6 +91,7 @@ class GameApp {
         // Apply settings if provided
         if (resolvedSettings) {
             this.game.fogEnabled = resolvedSettings.fogEnabled;
+            this.game.atmosphereEffectsEnabled = resolvedSettings.atmosphereEffectsEnabled !== false;
             if (this.game.hud && typeof this.game.hud.setCombatDetailLevel === 'function') {
                 this.game.hud.setCombatDetailLevel(resolvedSettings.combatDetailLevel);
             }
@@ -156,6 +159,10 @@ class GameApp {
                 if (this.bugReportModal) {
                     this.bugReportModal.open();
                 }
+            },
+            ({ atmosphereEffectsEnabled }) => {
+                if (!this.game) return;
+                this.game.atmosphereEffectsEnabled = atmosphereEffectsEnabled !== false;
             }
         );
         this.bugReportModal = new BugReportModal({

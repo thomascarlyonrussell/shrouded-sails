@@ -1,10 +1,11 @@
 export class InGameSettingsPanel {
-    constructor(settingsRef, audioManager, onOpen = null, onClose = null, onReportBug = null) {
+    constructor(settingsRef, audioManager, onOpen = null, onClose = null, onReportBug = null, onVisualSettingsChange = null) {
         this.settings = settingsRef;
         this.audioManager = audioManager;
         this.onOpen = onOpen;
         this.onClose = onClose;
         this.onReportBug = onReportBug;
+        this.onVisualSettingsChange = onVisualSettingsChange;
         this.storageKey = 'shrouded_sails_settings_v1';
         this.isOpen = false;
 
@@ -12,6 +13,7 @@ export class InGameSettingsPanel {
         this.backdropEl = document.getElementById('inGameSettingsBackdrop');
         this.buttonEl = document.getElementById('inGameSettingsButton');
         this.closeEl = document.getElementById('inGameSettingsClose');
+        this.atmosphereEffectsCheckbox = document.getElementById('igAtmosphereEffectsCheckbox');
         this.muteCheckbox = document.getElementById('igMuteAllCheckbox');
         this.masterSlider = document.getElementById('igMasterVolumeSlider');
         this.effectsSlider = document.getElementById('igEffectsVolumeSlider');
@@ -34,6 +36,11 @@ export class InGameSettingsPanel {
         this.boundMuteChange = (e) => {
             this.settings.audio.muted = e.target.checked;
             this.applyAndSave();
+        };
+        this.boundAtmosphereEffectsChange = (e) => {
+            this.settings.atmosphereEffectsEnabled = e.target.checked;
+            this.applyAndSave();
+            this.emitVisualSettingsChange();
         };
         this.boundMasterInput = (e) => {
             this.settings.audio.masterVolume = this.normalizeVolume(e.target.value);
@@ -82,6 +89,9 @@ export class InGameSettingsPanel {
     }
 
     setupAudioControls() {
+        if (this.atmosphereEffectsCheckbox) {
+            this.atmosphereEffectsCheckbox.addEventListener('change', this.boundAtmosphereEffectsChange);
+        }
         if (this.muteCheckbox) {
             this.muteCheckbox.addEventListener('change', this.boundMuteChange);
         }
@@ -117,6 +127,7 @@ export class InGameSettingsPanel {
     }
 
     syncFromSettings() {
+        if (this.atmosphereEffectsCheckbox) this.atmosphereEffectsCheckbox.checked = this.settings.atmosphereEffectsEnabled !== false;
         if (this.muteCheckbox) this.muteCheckbox.checked = this.settings.audio.muted;
         if (this.masterSlider) this.masterSlider.value = String(this.settings.audio.masterVolume);
         if (this.effectsSlider) this.effectsSlider.value = String(this.settings.audio.effectsVolume);
@@ -130,6 +141,13 @@ export class InGameSettingsPanel {
         if (this.effectsValue) this.effectsValue.textContent = `${this.settings.audio.effectsVolume}%`;
         if (this.uiValue) this.uiValue.textContent = `${this.settings.audio.uiVolume}%`;
         if (this.musicValue) this.musicValue.textContent = `${this.settings.audio.musicVolume ?? 50}%`;
+    }
+
+    emitVisualSettingsChange() {
+        if (typeof this.onVisualSettingsChange !== 'function') return;
+        this.onVisualSettingsChange({
+            atmosphereEffectsEnabled: this.settings.atmosphereEffectsEnabled !== false
+        });
     }
 
     toggle() {
@@ -190,6 +208,9 @@ export class InGameSettingsPanel {
             this.reportBugBtn.removeEventListener('click', this.boundReportBug);
         }
 
+        if (this.atmosphereEffectsCheckbox) {
+            this.atmosphereEffectsCheckbox.removeEventListener('change', this.boundAtmosphereEffectsChange);
+        }
         if (this.muteCheckbox) {
             this.muteCheckbox.removeEventListener('change', this.boundMuteChange);
         }

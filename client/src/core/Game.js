@@ -21,6 +21,7 @@ export class Game {
         this.hud = new HUD();
         this.fogOfWar = null;
         this.fogEnabled = true; // Default to enabled
+        this.atmosphereEffectsEnabled = true;
         this.combatEventHandler = null;
         this.audioManager = null;
         this.endTurnTransitionHandler = null;
@@ -46,6 +47,21 @@ export class Game {
 
     setEndTurnTransitionHandler(handler) {
         this.endTurnTransitionHandler = handler;
+    }
+
+    setFogEnabled(enabled) {
+        if (this.gameState !== GAME_STATES.SETUP) {
+            return false;
+        }
+        this.fogEnabled = Boolean(enabled);
+        if (this.fogEnabled) {
+            if (!this.fogOfWar) {
+                this.fogOfWar = new FogOfWar(this);
+            }
+        } else {
+            this.fogOfWar = null;
+        }
+        return true;
     }
 
     notifyEndTurnTransition(nextPlayer) {

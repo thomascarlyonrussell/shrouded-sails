@@ -180,6 +180,21 @@
                                 </label>
                             </div>
                         </div>
+                        <div class="setting-row">
+                            <div class="setting-label-wrap">
+                                <label for="atmosphereEffectsCheckbox" class="setting-title">Atmospheric Fog Effects</label>
+                                <span class="info-icon" tabindex="0" aria-label="Atmospheric fog effects details">
+                                    i
+                                    <span class="tooltip-content">Enable drifting mist, atmospheric haze, and enhanced fog styling. Disable for classic flat board fog visuals.</span>
+                                </span>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch" for="atmosphereEffectsCheckbox">
+                                    <input type="checkbox" id="atmosphereEffectsCheckbox" checked>
+                                    <span class="slider" aria-hidden="true"></span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -311,12 +326,25 @@
     </aside>
 
     <div id="inGameSettingsBackdrop" class="in-game-settings-backdrop hidden"></div>
-    <aside id="inGameSettingsPanel" class="in-game-settings-panel hidden" aria-label="Audio Settings">
+    <aside id="inGameSettingsPanel" class="in-game-settings-panel hidden" aria-label="Game Settings">
         <div class="in-game-settings-panel-header">
-            <h3>Audio Settings</h3>
-            <button id="inGameSettingsClose" class="in-game-settings-close" type="button" aria-label="Close audio settings">Close</button>
+            <h3>Game Settings</h3>
+            <button id="inGameSettingsClose" class="in-game-settings-close" type="button" aria-label="Close game settings">Close</button>
         </div>
         <div class="in-game-settings-body">
+            <div class="setting-item">
+                <div class="setting-row">
+                    <div class="setting-label-wrap">
+                        <label for="igAtmosphereEffectsCheckbox" class="setting-title">Atmospheric Fog Effects</label>
+                    </div>
+                    <div class="setting-control">
+                        <label class="toggle-switch" for="igAtmosphereEffectsCheckbox">
+                            <input type="checkbox" id="igAtmosphereEffectsCheckbox" checked>
+                            <span class="slider" aria-hidden="true"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
             <div class="setting-item">
                 <label for="igMuteAllCheckbox" class="setting-label">
                     <input type="checkbox" id="igMuteAllCheckbox">

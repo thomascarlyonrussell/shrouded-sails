@@ -1,8 +1,5 @@
-# fog-overlay-rendering
+## MODIFIED Requirements
 
-## Purpose
-Renders visual fog overlay on map areas outside friendly fleet vision range while maintaining map readability and performance.
-## Requirements
 ### Requirement: Fog overlay on out-of-vision areas
 The system SHALL render a multi-density translucent fog overlay on map areas outside friendly fleet vision range.
 
@@ -25,19 +22,6 @@ The system SHALL render a multi-density translucent fog overlay on map areas out
 - **THEN** fog coverage and fog density zones SHALL be recalculated and updated
 - **AND** newly visible tiles SHALL have fog removed
 - **AND** tiles that moved out of vision SHALL have fog added
-
-### Requirement: Islands always visible through fog
-The system SHALL render all island tiles clearly regardless of fog of war state.
-
-#### Scenario: Islands in fogged areas remain visible
-- **WHEN** an island tile is outside friendly vision range
-- **THEN** the island SHALL be rendered normally without fog obscuring it
-- **AND** the island SHALL be clearly distinguishable from water tiles
-
-#### Scenario: Islands provide terrain information
-- **WHEN** viewing the map with fog of war enabled
-- **THEN** all island positions and shapes SHALL be visible to both players
-- **AND** islands SHALL provide the same strategic information regardless of vision coverage
 
 ### Requirement: Fog visual styling
 The system SHALL render fog with calm, ethereal styling that indicates uncertainty while maintaining map readability.
@@ -78,4 +62,3 @@ The system SHALL render fog overlays efficiently without impacting game performa
 #### Scenario: Fog rendering maintains smooth frame rates
 - **WHEN** fog and atmosphere are rendered during gameplay
 - **THEN** rendering SHALL maintain smooth frame rates (≥30 FPS)
-
