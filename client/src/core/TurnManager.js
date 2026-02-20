@@ -28,6 +28,18 @@ export class TurnManager {
         // Phase 2: Movement Phase (handled by player actions)
         // Phase 3: Combat Phase (handled by player actions)
         // Phase 4: End Phase (handled by endTurn)
+
+        if (this.game.isAIControlledPlayer()) {
+            const requested = this.game.requestAITurnExecution();
+            if (!requested) {
+                // Failsafe: never deadlock on an AI-controlled turn.
+                setTimeout(() => {
+                    if (this.game.currentPlayer === PLAYERS.PLAYER2 && this.game.gameState === 'playing') {
+                        this.game.endTurn();
+                    }
+                }, 450);
+            }
+        }
     }
 
     executeWindPhase() {
@@ -79,6 +91,12 @@ export class TurnManager {
 
         // Trigger any end-turn transition behavior (e.g., camera reframing)
         this.game.notifyEndTurnTransition(nextPlayer);
+
+        // In single-player, there is no pass-device handoff UI.
+        if (this.game.isSinglePlayerMode()) {
+            this.switchToNextPlayer();
+            return;
+        }
 
         // If fog of war is enabled, show turn transition screen
         if (this.game.fogOfWar) {

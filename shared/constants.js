@@ -143,6 +143,22 @@ export const PLAYERS = {
     PLAYER2: 'player2'
 };
 
+export const GAME_MODES = {
+    HOTSEAT: 'hotseat',
+    SINGLE_PLAYER: 'single_player'
+};
+
+export const AI_PACING = {
+    START_DELAY_MS: 420,
+    SELECT_DELAY_MS: 220,
+    ACTION_DELAY_MS: 320,
+    END_DELAY_MS: 260
+};
+
+export const AI_LIMITS = {
+    MAX_TURN_STEPS: 24
+};
+
 export const FLEET_COMPOSITION = [
     { type: 1, count: 3 },  // 3 Sloops
     { type: 2, count: 2 },  // 2 Frigates

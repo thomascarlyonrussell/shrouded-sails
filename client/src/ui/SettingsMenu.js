@@ -1,9 +1,12 @@
+import { GAME_MODES } from '../../../shared/constants.js';
+
 export class SettingsMenu {
     constructor(onSettingsConfirmed, audioManager = null) {
         this.storageKey = 'shrouded_sails_settings_v1';
         this.onSettingsConfirmed = onSettingsConfirmed;
         this.audioManager = audioManager;
         this.defaultSettings = {
+            gameMode: GAME_MODES.HOTSEAT,
             fogEnabled: true,  // Default to enabled
             atmosphereEffectsEnabled: true,
             boardLayout: 'landscape',
@@ -21,6 +24,7 @@ export class SettingsMenu {
         this.menuElement = null;
         this.fogCheckbox = null;
         this.atmosphereEffectsCheckbox = null;
+        this.gameModeSelect = null;
         this.combatDetailSelect = null;
         this.muteAllCheckbox = null;
         this.masterVolumeSlider = null;
@@ -49,24 +53,64 @@ export class SettingsMenu {
             console.warn('[SettingsMenu] Failed to read settings from localStorage.', error);
         }
 
-        const merged = {
+        const merged = SettingsMenu.normalizeSettings({
             ...this.defaultSettings,
             ...(persisted || {}),
             audio: {
                 ...this.defaultSettings.audio,
                 ...((persisted && persisted.audio) || {})
             }
+        }, this.defaultSettings);
+
+        return merged;
+    }
+
+    static normalizeGameMode(mode) {
+        return mode === GAME_MODES.SINGLE_PLAYER ? GAME_MODES.SINGLE_PLAYER : GAME_MODES.HOTSEAT;
+    }
+
+    static normalizeSettings(input, defaultSettings) {
+        const defaults = defaultSettings || {
+            gameMode: GAME_MODES.HOTSEAT,
+            fogEnabled: true,
+            atmosphereEffectsEnabled: true,
+            boardLayout: 'landscape',
+            combatDetailLevel: 'detailed',
+            audio: {
+                masterVolume: 70,
+                effectsVolume: 80,
+                uiVolume: 70,
+                musicVolume: 50,
+                muted: false
+            }
+        };
+        const merged = {
+            ...defaults,
+            ...(input || {}),
+            audio: {
+                ...defaults.audio,
+                ...((input && input.audio) || {})
+            }
         };
 
-        merged.audio.masterVolume = this.normalizeVolume(merged.audio.masterVolume, this.defaultSettings.audio.masterVolume);
-        merged.audio.effectsVolume = this.normalizeVolume(merged.audio.effectsVolume, this.defaultSettings.audio.effectsVolume);
-        merged.audio.uiVolume = this.normalizeVolume(merged.audio.uiVolume, this.defaultSettings.audio.uiVolume);
-        merged.audio.musicVolume = this.normalizeVolume(merged.audio.musicVolume, this.defaultSettings.audio.musicVolume);
+        merged.audio.masterVolume = Number.isFinite(Number.parseInt(merged.audio.masterVolume, 10))
+            ? Math.max(0, Math.min(100, Number.parseInt(merged.audio.masterVolume, 10)))
+            : defaults.audio.masterVolume;
+        merged.audio.effectsVolume = Number.isFinite(Number.parseInt(merged.audio.effectsVolume, 10))
+            ? Math.max(0, Math.min(100, Number.parseInt(merged.audio.effectsVolume, 10)))
+            : defaults.audio.effectsVolume;
+        merged.audio.uiVolume = Number.isFinite(Number.parseInt(merged.audio.uiVolume, 10))
+            ? Math.max(0, Math.min(100, Number.parseInt(merged.audio.uiVolume, 10)))
+            : defaults.audio.uiVolume;
+        merged.audio.musicVolume = Number.isFinite(Number.parseInt(merged.audio.musicVolume, 10))
+            ? Math.max(0, Math.min(100, Number.parseInt(merged.audio.musicVolume, 10)))
+            : defaults.audio.musicVolume;
         merged.audio.muted = Boolean(merged.audio.muted);
         merged.combatDetailLevel = merged.combatDetailLevel === 'compact' ? 'compact' : 'detailed';
         merged.fogEnabled = Boolean(merged.fogEnabled);
         merged.atmosphereEffectsEnabled = merged.atmosphereEffectsEnabled !== false;
         merged.boardLayout = merged.boardLayout === 'portrait' ? 'portrait' : 'landscape';
+        merged.gameMode = SettingsMenu.normalizeGameMode(merged.gameMode);
 
         return merged;
     }
@@ -111,6 +155,7 @@ export class SettingsMenu {
         this.menuElement = document.getElementById('settingsModal');
         this.fogCheckbox = document.getElementById('fogOfWarCheckbox');
         this.atmosphereEffectsCheckbox = document.getElementById('atmosphereEffectsCheckbox');
+        this.gameModeSelect = document.getElementById('gameModeSelect');
         this.combatDetailSelect = document.getElementById('combatDetailLevelSelect');
         this.boardLayoutSelect = document.getElementById('boardLayoutSelect');
         this.muteAllCheckbox = document.getElementById('muteAllCheckbox');
@@ -134,6 +179,9 @@ export class SettingsMenu {
         this.fogCheckbox.checked = this.settings.fogEnabled;
         if (this.atmosphereEffectsCheckbox) {
             this.atmosphereEffectsCheckbox.checked = this.settings.atmosphereEffectsEnabled;
+        }
+        if (this.gameModeSelect) {
+            this.gameModeSelect.value = this.settings.gameMode;
         }
         if (this.combatDetailSelect) {
             this.combatDetailSelect.value = this.settings.combatDetailLevel;
@@ -173,6 +221,13 @@ export class SettingsMenu {
             this.atmosphereEffectsCheckbox.addEventListener('change', (e) => {
                 this.settings.atmosphereEffectsEnabled = e.target.checked;
                 console.log(`Atmospheric Fog Effects: ${this.settings.atmosphereEffectsEnabled ? 'Enabled' : 'Disabled'}`);
+                this.saveSettings();
+            });
+        }
+
+        if (this.gameModeSelect) {
+            this.gameModeSelect.addEventListener('change', (e) => {
+                this.settings.gameMode = SettingsMenu.normalizeGameMode(e.target.value);
                 this.saveSettings();
             });
         }
@@ -265,6 +320,7 @@ export class SettingsMenu {
         if (this.menuElement) {
             // Re-sync audio UI in case values changed via in-game panel
             if (this.muteAllCheckbox) this.muteAllCheckbox.checked = this.settings.audio.muted;
+            if (this.gameModeSelect) this.gameModeSelect.value = this.settings.gameMode;
             if (this.masterVolumeSlider) this.masterVolumeSlider.value = String(this.settings.audio.masterVolume);
             if (this.effectsVolumeSlider) this.effectsVolumeSlider.value = String(this.settings.audio.effectsVolume);
             if (this.uiVolumeSlider) this.uiVolumeSlider.value = String(this.settings.audio.uiVolume);

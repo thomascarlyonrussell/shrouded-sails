@@ -267,6 +267,10 @@ export class ShipPanel {
         // The event listeners are added dynamically in createShipCard
     }
 
+    getViewingPlayer() {
+        return this.game.getViewingPlayer ? this.game.getViewingPlayer() : this.game.currentPlayer;
+    }
+
     getOrCreateStatusContainer(card) {
         let statusContainer = card.querySelector('.ship-card-status');
         if (!statusContainer) {
@@ -278,7 +282,7 @@ export class ShipPanel {
     }
 
     isEnemyShipForViewer(ship) {
-        return ship.owner !== this.game.currentPlayer;
+        return ship.owner !== this.getViewingPlayer();
     }
 
     hasGhostRecord(ship, viewingPlayer) {
@@ -296,11 +300,12 @@ export class ShipPanel {
             return 'VISIBLE_FULL';
         }
 
-        if (this.game.fogOfWar.isShipVisible(ship, this.game.currentPlayer)) {
+        const viewingPlayer = this.getViewingPlayer();
+        if (this.game.fogOfWar.isShipVisible(ship, viewingPlayer)) {
             return 'VISIBLE_FULL';
         }
 
-        return this.hasGhostRecord(ship, this.game.currentPlayer)
+        return this.hasGhostRecord(ship, viewingPlayer)
             ? 'HIDDEN_GHOST'
             : 'HIDDEN_UNKNOWN';
     }
@@ -347,7 +352,7 @@ export class ShipPanel {
         }
 
         // Action badges (only for current player)
-        if (ship.owner === this.game.currentPlayer && !ship.isDestroyed) {
+        if (ship.owner === this.getViewingPlayer() && !ship.isDestroyed) {
             if (ship.isMovementExhausted()) {
                 const badge = document.createElement('span');
                 badge.className = 'ship-card-badge moved';

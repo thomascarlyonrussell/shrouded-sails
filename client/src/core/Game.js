@@ -1,4 +1,4 @@
-import { PLAYERS, GAME_STATES, ACTION_MODES } from '../../../shared/constants.js';
+import { PLAYERS, GAME_STATES, ACTION_MODES, GAME_MODES } from '../../../shared/constants.js';
 import { GameMap } from '../map/GameMap.js';
 import { Fleet } from '../entities/Fleet.js';
 import { Wind } from '../map/Wind.js';
@@ -9,10 +9,11 @@ import { HUD } from '../ui/HUD.js';
 import { FogOfWar } from '../fog/FogOfWar.js';
 
 export class Game {
-    constructor(boardLayout = 'landscape') {
+    constructor(boardLayout = 'landscape', gameMode = GAME_MODES.HOTSEAT) {
         this.gameState = GAME_STATES.SETUP;
         this.map = null;
         this.boardLayout = boardLayout;
+        this.gameMode = gameMode === GAME_MODES.SINGLE_PLAYER ? GAME_MODES.SINGLE_PLAYER : GAME_MODES.HOTSEAT;
         this.fleets = {};
         this.currentPlayer = PLAYERS.PLAYER1;
         this.turnNumber = 1;
@@ -25,6 +26,8 @@ export class Game {
         this.combatEventHandler = null;
         this.audioManager = null;
         this.endTurnTransitionHandler = null;
+        this.aiTurnRequestHandler = null;
+        this.isAITurnInProgress = false;
 
         // UI state
         this.selectedShip = null;
@@ -47,6 +50,46 @@ export class Game {
 
     setEndTurnTransitionHandler(handler) {
         this.endTurnTransitionHandler = handler;
+    }
+
+    setAITurnRequestHandler(handler) {
+        this.aiTurnRequestHandler = handler;
+    }
+
+    setGameMode(mode) {
+        this.gameMode = mode === GAME_MODES.SINGLE_PLAYER ? GAME_MODES.SINGLE_PLAYER : GAME_MODES.HOTSEAT;
+    }
+
+    isSinglePlayerMode() {
+        return this.gameMode === GAME_MODES.SINGLE_PLAYER;
+    }
+
+    getViewingPlayer() {
+        return this.isSinglePlayerMode() ? PLAYERS.PLAYER1 : this.currentPlayer;
+    }
+
+    isAIControlledPlayer(player = this.currentPlayer) {
+        return this.isSinglePlayerMode() && player === PLAYERS.PLAYER2;
+    }
+
+    isHumanInputLocked() {
+        return this.isAIControlledPlayer() || this.isAITurnInProgress;
+    }
+
+    setAITurnInProgress(active) {
+        this.isAITurnInProgress = Boolean(active);
+    }
+
+    requestAITurnExecution() {
+        if (!this.isAIControlledPlayer() || typeof this.aiTurnRequestHandler !== 'function') {
+            return false;
+        }
+
+        this.aiTurnRequestHandler({
+            currentPlayer: this.currentPlayer,
+            turnNumber: this.turnNumber
+        });
+        return true;
     }
 
     setFogEnabled(enabled) {

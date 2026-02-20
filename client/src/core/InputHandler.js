@@ -51,16 +51,22 @@ export class InputHandler {
         this.touchStartHandler = (e) => this.handleTouchStart(e);
         this.touchMoveHandler = (e) => this.handleTouchMove(e);
         this.touchEndHandler = (e) => this.handleTouchEnd(e);
-        this.moveButtonHandler = () => { this.game.enterMoveMode(); this.updateUI(); };
-        this.fireButtonHandler = () => { this.game.enterAttackMode(); this.updateUI(); };
-        this.boardButtonHandler = () => { this.game.enterBoardMode(); this.updateUI(); };
-        this.endTurnButtonHandler = () => { this.game.endTurn(); this.updateUI(); };
+        this.moveButtonHandler = () => { if (this.isInputBlocked()) return; this.game.enterMoveMode(); this.updateUI(); };
+        this.fireButtonHandler = () => { if (this.isInputBlocked()) return; this.game.enterAttackMode(); this.updateUI(); };
+        this.boardButtonHandler = () => { if (this.isInputBlocked()) return; this.game.enterBoardMode(); this.updateUI(); };
+        this.endTurnButtonHandler = () => { if (this.isInputBlocked()) return; this.game.endTurn(); this.updateUI(); };
         this.zoomInButtonHandler = () => this.zoomIn();
         this.zoomOutButtonHandler = () => this.zoomOut();
         this.zoomResetButtonHandler = () => this.resetZoom();
         this.keydownHandler = (e) => this.handleKeyPress(e);
 
         this.setupEventListeners();
+    }
+
+    isInputBlocked() {
+        return this.game && typeof this.game.isHumanInputLocked === 'function'
+            ? this.game.isHumanInputLocked()
+            : false;
     }
 
     setupEventListeners() {
@@ -161,6 +167,8 @@ export class InputHandler {
     }
 
     handleCanvasClick(event) {
+        if (this.isInputBlocked()) return;
+
         if (this.mouseState.suppressNextClick) {
             this.mouseState.suppressNextClick = false;
             return;
@@ -175,6 +183,11 @@ export class InputHandler {
     }
 
     handleCanvasHover(event) {
+        if (this.isInputBlocked()) {
+            this.game.clearMovementPreview();
+            return;
+        }
+
         const point = this.getCanvasPoint(event.clientX, event.clientY);
         const gridPos = this.renderer.screenToGrid(point.x, point.y);
 
@@ -238,6 +251,8 @@ export class InputHandler {
     }
 
     handleTouchStart(event) {
+        if (this.isInputBlocked()) return;
+
         event.preventDefault();
         if (event.touches.length === 2) {
             this.clearLongPressTimer();
@@ -263,6 +278,8 @@ export class InputHandler {
     }
 
     handleTouchMove(event) {
+        if (this.isInputBlocked()) return;
+
         event.preventDefault();
         if (event.touches.length === 2) {
             this.clearLongPressTimer();
@@ -313,6 +330,8 @@ export class InputHandler {
     }
 
     handleTouchEnd(event) {
+        if (this.isInputBlocked()) return;
+
         this.clearLongPressTimer();
 
         if (event.touches.length === 0 && this.touchState.dragPreviewActive) {
@@ -387,6 +406,8 @@ export class InputHandler {
     }
 
     handleKeyPress(event) {
+        if (this.isInputBlocked()) return;
+
         const zoomAction = this.getZoomShortcutAction(event);
         if (zoomAction && !this.shouldIgnoreZoomShortcut(event)) {
             event.preventDefault();

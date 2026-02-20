@@ -209,6 +209,18 @@ export class Renderer {
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
+    getViewingPlayer() {
+        return this.game.getViewingPlayer ? this.game.getViewingPlayer() : this.game.currentPlayer;
+    }
+
+    isShipVisibleToViewer(ship) {
+        if (!ship) return false;
+        const viewingPlayer = this.getViewingPlayer();
+        if (ship.owner === viewingPlayer) return true;
+        if (!this.game.fogOfWar) return true;
+        return this.game.fogOfWar.isShipVisible(ship, viewingPlayer);
+    }
+
     isAtmosphereEffectsEnabled() {
         return this.atmosphereConfig.ENABLED && this.game?.atmosphereEffectsEnabled !== false;
     }
@@ -670,14 +682,15 @@ export class Renderer {
 
     drawShips() {
         const ships = this.gameMap.ships;
+        const viewingPlayer = this.getViewingPlayer();
 
         for (const ship of ships) {
             if (ship.isDestroyed) continue;
 
             // Check visibility for enemy ships with fog of war
             if (this.game.fogOfWar) {
-                const isEnemyShip = ship.owner !== this.game.currentPlayer;
-                if (isEnemyShip && !this.game.fogOfWar.isShipVisible(ship, this.game.currentPlayer)) {
+                const isEnemyShip = ship.owner !== viewingPlayer;
+                if (isEnemyShip && !this.game.fogOfWar.isShipVisible(ship, viewingPlayer)) {
                     // Enemy ship not visible - skip rendering (will be shown as ghost instead)
                     continue;
                 }
@@ -744,7 +757,7 @@ export class Renderer {
             }
 
             // Draw action indicators only for the current player's ships
-            if (ship.owner === this.game.currentPlayer) {
+            if (ship.owner === viewingPlayer) {
                 this.drawActionIndicators(ship, bounds.x, bounds.y);
 
                 // Draw dim overlay if ship has completed all actions
@@ -876,6 +889,7 @@ export class Renderer {
         if (!this.game.selectedShip) return;
 
         const ship = this.game.selectedShip;
+        if (!this.isShipVisibleToViewer(ship)) return;
         const bounds = this.getShipBounds(ship);
 
         // Draw yellow outline
@@ -919,6 +933,7 @@ export class Renderer {
     drawSelectedCapturedBadge() {
         const ship = this.game.selectedShip;
         if (!ship || !ship.isCaptured || ship.isDestroyed) return;
+        if (!this.isShipVisibleToViewer(ship)) return;
 
         const bounds = this.getShipBounds(ship);
         const badgeX = bounds.x + bounds.width / 2;
@@ -950,11 +965,12 @@ export class Renderer {
         if (!this.hoveredShip || this.hoveredShip.isDestroyed) return;
 
         const ship = this.hoveredShip;
+        const viewingPlayer = this.getViewingPlayer();
 
         // Defense-in-depth: never highlight hidden enemy positions through panel hover.
         if (this.game.fogOfWar) {
-            const isEnemyShip = ship.owner !== this.game.currentPlayer;
-            if (isEnemyShip && !this.game.fogOfWar.isShipVisible(ship, this.game.currentPlayer)) {
+            const isEnemyShip = ship.owner !== viewingPlayer;
+            if (isEnemyShip && !this.game.fogOfWar.isShipVisible(ship, viewingPlayer)) {
                 return;
             }
         }
@@ -977,6 +993,7 @@ export class Renderer {
 
     drawValidMoveHighlights() {
         if (this.game.actionMode !== 'move') return;
+        if (!this.isShipVisibleToViewer(this.game.selectedShip)) return;
 
         for (const pos of this.game.validMovePositions) {
             const screenPos = this.gridToScreen(pos.x, pos.y);
@@ -987,6 +1004,7 @@ export class Renderer {
 
     drawMovementPreviewTiles() {
         if (this.game.actionMode !== 'move') return;
+        if (!this.isShipVisibleToViewer(this.game.selectedShip)) return;
 
         const preview = this.game.movementPreview;
         if (!preview || !Array.isArray(preview.occupiedTiles)) return;
@@ -1012,6 +1030,7 @@ export class Renderer {
 
     drawMovementPreviewShip() {
         if (this.game.actionMode !== 'move') return;
+        if (!this.isShipVisibleToViewer(this.game.selectedShip)) return;
 
         const preview = this.game.movementPreview;
         if (!preview || !preview.ship) return;
@@ -1055,6 +1074,7 @@ export class Renderer {
 
     drawValidTargetHighlights() {
         if (this.game.actionMode !== 'attack' && this.game.actionMode !== 'board') return;
+        if (!this.isShipVisibleToViewer(this.game.selectedShip)) return;
 
         for (const target of this.game.validTargets) {
             const bounds = this.getShipBounds(target);
@@ -1278,13 +1298,14 @@ export class Renderer {
 
     drawFogOverlay() {
         if (!this.game.fogOfWar) return;
+        const viewingPlayer = this.getViewingPlayer();
 
         this.ensureFogCacheCanvas();
         const advancedFogEnabled = this.isAtmosphereEffectsEnabled();
 
         const visibilityStateKey = this.buildFogVisibilityStateKey();
         if (this.fogVisibilityStateKey !== visibilityStateKey) {
-            this.fogVisibleTilesCache = this.game.fogOfWar.calculateVisionCoverage(this.game.currentPlayer);
+            this.fogVisibleTilesCache = this.game.fogOfWar.calculateVisionCoverage(viewingPlayer);
             this.fogVisibleTilesHash = this.hashTileSet(this.fogVisibleTilesCache);
             this.fogVisibilityStateKey = visibilityStateKey;
             this.fogCacheKey = null;
@@ -1301,9 +1322,9 @@ export class Renderer {
         if (this.fogCacheKey !== fogCacheKey) {
             this.fogCacheCtx.clearRect(0, 0, this.fogCacheCanvas.width, this.fogCacheCanvas.height);
             if (advancedFogEnabled) {
-                this.rebuildFogCacheLayer(visibleTiles);
+                this.rebuildFogCacheLayer(visibleTiles, viewingPlayer);
             } else {
-                this.rebuildClassicFogLayer(visibleTiles);
+                this.rebuildClassicFogLayer(visibleTiles, viewingPlayer);
             }
 
             this.fogCacheKey = fogCacheKey;
@@ -1326,7 +1347,7 @@ export class Renderer {
         }
     }
 
-    rebuildFogCacheLayer(visibleTiles) {
+    rebuildFogCacheLayer(visibleTiles, viewingPlayer) {
         const width = this.gameMap.width;
         const height = this.gameMap.height;
         const distanceMap = buildVisibilityDistanceMap(width, height, visibleTiles);
@@ -1340,7 +1361,7 @@ export class Renderer {
 
                 // Friendly ship tiles always remain visible.
                 const shipAtTile = this.gameMap.getShipAt(x, y);
-                if (shipAtTile && shipAtTile.owner === this.game.currentPlayer) continue;
+                if (shipAtTile && shipAtTile.owner === viewingPlayer) continue;
 
                 const tileKey = `${x},${y}`;
                 if (visibleTiles.has(tileKey)) continue;
@@ -1359,7 +1380,7 @@ export class Renderer {
         this.applyFogBoundaryFeather(visibleTiles);
     }
 
-    rebuildClassicFogLayer(visibleTiles) {
+    rebuildClassicFogLayer(visibleTiles, viewingPlayer) {
         this.fogCacheCtx.fillStyle = 'rgba(0, 0, 0, 0.35)';
 
         for (let y = 0; y < this.gameMap.height; y++) {
@@ -1371,7 +1392,7 @@ export class Renderer {
 
                 // Friendly ship tiles stay visible.
                 const shipAtTile = this.gameMap.getShipAt(x, y);
-                if (shipAtTile && shipAtTile.owner === this.game.currentPlayer) continue;
+                if (shipAtTile && shipAtTile.owner === viewingPlayer) continue;
 
                 if (!visibleTiles.has(`${x},${y}`)) {
                     const screenX = x * this.tileSize;
@@ -1429,12 +1450,13 @@ export class Renderer {
     }
 
     buildFogVisibilityStateKey() {
+        const viewingPlayer = this.getViewingPlayer();
         const friendlyState = this.game
-            .getShipsByOwner(this.game.currentPlayer, false)
+            .getShipsByOwner(viewingPlayer, false)
             .map(ship => `${ship.id}:${ship.x},${ship.y},${ship.orientation},${ship.isDestroyed ? 1 : 0}`)
             .join('|');
 
-        return `${this.game.currentPlayer}|${this.game.turnNumber}|${friendlyState}`;
+        return `${viewingPlayer}|${this.game.turnNumber}|${friendlyState}`;
     }
 
     buildFogCacheKey(visibilityStateKey, visibleHash, visibleCount, advancedFogEnabled = true) {
@@ -1453,13 +1475,14 @@ export class Renderer {
 
     drawGhostShips() {
         if (!this.game.fogOfWar) return;
+        const viewingPlayer = this.getViewingPlayer();
 
         // Get ghost ships for current player
-        const ghostShips = this.game.fogOfWar.getGhostShips(this.game.currentPlayer);
+        const ghostShips = this.game.fogOfWar.getGhostShips(viewingPlayer);
 
         for (const ghostData of ghostShips) {
             // Safety check: never render a ghost when the real ship is visible
-            if (this.game.fogOfWar.isShipVisible(ghostData.ship, this.game.currentPlayer)) {
+            if (this.game.fogOfWar.isShipVisible(ghostData.ship, viewingPlayer)) {
                 continue;
             }
             this.drawGhostShip(ghostData.ship, ghostData.lastX, ghostData.lastY, ghostData.orientation);

@@ -8,6 +8,8 @@ import { BugReportModal } from './ui/BugReportModal.js';
 import { SplashScreen } from './ui/SplashScreen.js';
 import { TutorialTour } from './ui/TutorialTour.js';
 import { AudioManager } from './audio/AudioManager.js';
+import { AIController } from './ai/AIController.js';
+import { GAME_MODES } from '../../shared/constants.js';
 import { inject } from '@vercel/analytics';
 
 class GameApp {
@@ -22,6 +24,7 @@ class GameApp {
         this.bugReportModal = null;
         this.splashScreen = null;
         this.tutorialTour = null;
+        this.aiController = null;
         this.audioManager = new AudioManager();
         this.audioManager.setupGlobalUIHoverSound();
         this.isRunning = false;
@@ -43,6 +46,7 @@ class GameApp {
 
     getDefaultSettings() {
         return {
+            gameMode: GAME_MODES.HOTSEAT,
             fogEnabled: true,
             atmosphereEffectsEnabled: true,
             combatDetailLevel: 'detailed',
@@ -62,6 +66,7 @@ class GameApp {
                 height: window.innerHeight
             },
             boardLayout: this.game?.boardLayout || settings?.boardLayout || 'landscape',
+            gameMode: this.game?.gameMode || settings?.gameMode || GAME_MODES.HOTSEAT,
             turn: this.game?.turnNumber ?? null,
             currentPlayer: this.game?.currentPlayer ?? null,
             fogEnabled: this.game?.fogEnabled ?? settings?.fogEnabled ?? null,
@@ -77,14 +82,18 @@ class GameApp {
         this.setStartupOverlayState('none');
         const launchMode = options && options.launchMode === 'tutorial' ? 'tutorial' : 'standard';
 
-        const resolvedSettings = this.cloneSettings(settings)
+        const rawSettings = this.cloneSettings(settings)
             || (this.settingsMenu ? this.cloneSettings(this.settingsMenu.getSettings()) : this.getDefaultSettings());
+        const resolvedSettings = SettingsMenu.normalizeSettings(rawSettings, this.getDefaultSettings());
 
         this.lastConfirmedSettings = this.cloneSettings(resolvedSettings);
 
         // Create game
         const boardLayout = resolvedSettings?.boardLayout === 'portrait' ? 'portrait' : 'landscape';
-        this.game = new Game(boardLayout);
+        const gameMode = resolvedSettings?.gameMode === GAME_MODES.SINGLE_PLAYER
+            ? GAME_MODES.SINGLE_PLAYER
+            : GAME_MODES.HOTSEAT;
+        this.game = new Game(boardLayout, gameMode);
         this.canvas.dataset.layout = boardLayout;
         this.game.setAudioManager(this.audioManager);
 
@@ -130,6 +139,17 @@ class GameApp {
         // Create input handler
         this.inputHandler = new InputHandler(this.canvas, this.game, this.renderer);
         console.log('Input handler initialized');
+
+        // Create AI controller and wire turn entrypoint
+        this.aiController = new AIController(this.game, {
+            onUpdateUI: () => {
+                if (this.inputHandler) this.inputHandler.updateUI();
+            }
+        });
+        this.game.setAITurnRequestHandler(() => {
+            if (!this.aiController) return;
+            this.aiController.executeTurn();
+        });
 
         // Link ship panel to input handler for UI updates
         this.shipPanel.setInputHandler(this.inputHandler);
@@ -236,9 +256,16 @@ class GameApp {
             this.inputHandler.destroy();
             this.inputHandler = null;
         }
+        if (this.aiController) {
+            this.aiController.destroy();
+            this.aiController = null;
+        }
 
         if (this.game && this.game.hud) {
             this.game.hud.closeCombatFeed();
+        }
+        if (this.game && typeof this.game.setAITurnRequestHandler === 'function') {
+            this.game.setAITurnRequestHandler(null);
         }
 
         this.shipPanel = null;
@@ -376,7 +403,7 @@ class GameApp {
 
         // Update fog of war last known positions
         if (this.game.fogOfWar) {
-            this.game.fogOfWar.updateLastKnownPositions(this.game.currentPlayer);
+            this.game.fogOfWar.updateLastKnownPositions(this.game.getViewingPlayer());
         }
 
         // Continue render loop

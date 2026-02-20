@@ -12,6 +12,18 @@ export class ActionMenu {
     }
 
     updateButtonStates(selectedShip) {
+        const inputLocked = this.game && typeof this.game.isHumanInputLocked === 'function'
+            ? this.game.isHumanInputLocked()
+            : false;
+
+        if (inputLocked) {
+            this.moveBtn.disabled = true;
+            this.fireBtn.disabled = true;
+            this.boardBtn.disabled = true;
+            this.endTurnBtn.disabled = true;
+            return;
+        }
+
         if (selectedShip && !selectedShip.isDestroyed) {
             this.moveBtn.disabled = !selectedShip.canMove();
             this.fireBtn.disabled = !selectedShip.canAttack();
