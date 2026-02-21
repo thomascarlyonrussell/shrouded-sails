@@ -393,6 +393,9 @@
             <div class="setting-item">
                 <button id="reportBugBtn" class="action-btn danger report-bug-btn" type="button">Report Feedback/Bug</button>
             </div>
+            <div class="setting-item">
+                <button id="aboutBtn" class="action-btn about-btn" type="button">About This Game</button>
+            </div>
         </div>
     </aside>
 
@@ -414,6 +417,59 @@
                     <button id="bugReportCancelBtn" class="action-btn" type="button">Cancel</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+        <div class="modal-content about-modal">
+            <h2 id="aboutTitle">About Shrouded Sails</h2>
+            
+            <div class="about-section">
+                <p class="about-tagline">A turn-based naval strategy game where fleets clash through fog-shrouded waters.</p>
+                <p class="about-description">Command your fleet of Sloops, Frigates, and Flagships in tactical combat. Navigate through fog of war, harness the wind, and outmaneuver your opponent to achieve victory.</p>
+            </div>
+
+            <div class="about-section">
+                <h3 class="about-section-title">⚓ Created By</h3>
+                <p>
+                    <strong>Thomas Carlyon Russell</strong><br>
+                    <a href="https://github.com/thomascarlyonrussell" target="_blank" rel="noopener noreferrer" class="about-link">
+                        View Profile on GitHub →
+                    </a>
+                </p>
+            </div>
+
+            <div class="about-section">
+                <h3 class="about-section-title">🤖 Built with AI Assistance</h3>
+                <p>This game was developed with assistance from:</p>
+                <ul class="about-list">
+                    <li><strong>GitHub Copilot</strong> – Code completion and inline suggestions</li>
+                    <li><strong>Claude (Anthropic)</strong> – Code architecture, refactoring, and documentation</li>
+                    <li><strong>OpenAI Codex</strong> – Code generation and problem-solving</li>
+                </ul>
+                <p class="about-note">All code is human-reviewed, tested, and maintained. Learn more about our AI workflow in <a href="https://github.com/thomascarlyonrussell/shrouded-sails/blob/main/AGENTS.md" target="_blank" rel="noopener noreferrer" class="about-link">AGENTS.md</a>.</p>
+            </div>
+
+            <div class="about-section">
+                <h3 class="about-section-title">🔗 Links</h3>
+                <ul class="about-links-list">
+                    <li>
+                        <a href="https://github.com/thomascarlyonrussell/shrouded-sails" target="_blank" rel="noopener noreferrer" class="about-link">
+                            📦 View Source on GitHub
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/thomascarlyonrussell/shrouded-sails#readme" target="_blank" rel="noopener noreferrer" class="about-link">
+                            📚 Project Documentation
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="about-actions">
+                <button id="aboutCloseBtn" class="action-btn primary" type="button">Close</button>
+            </div>
         </div>
     </div>
 

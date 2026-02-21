@@ -1,6 +1,47 @@
 # Shrouded Sails
 
-A turn-based naval strategy game built with vanilla JavaScript and HTML5 Canvas.
+[![Netlify Status](https://api.netlify.com/api/v1/badges/92a7e7bb-9780-4f72-9878-1909c94dd096/deploy-status)](https://app.netlify.com/projects/shroudedsails/deploys)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![Vite](https://img.shields.io/badge/Vite-6.1.0-646CFF.svg?logo=vite)](https://vitejs.dev/)
+[![Node](https://img.shields.io/badge/Node-v18+-339933.svg?logo=node.js)](https://nodejs.org/)
+[![Bun](https://img.shields.io/badge/Bun-latest-000000.svg?logo=bun)](https://bun.sh/)
+[![GitHub Issues](https://img.shields.io/github/issues/thomascarlyonrussell/shrouded-sails)](https://github.com/thomascarlyonrussell/shrouded-sails/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/thomascarlyonrussell/shrouded-sails)](https://github.com/thomascarlyonrussell/shrouded-sails/pulls)
+
+> A turn-based naval strategy game where players command fleets of ships in tactical combat across a fog-shrouded ocean. Built with vanilla JavaScript and HTML5 Canvas.
+
+## 🤖 AI-Assisted Development
+
+This repository is developed with the assistance of AI coding agents, including:
+
+- **GitHub Copilot** - Code completion and inline suggestions
+- **Claude (Anthropic)** - Code architecture, refactoring, and documentation
+- **OpenAI Codex** - Code generation and problem-solving
+
+AI tools augment the development process but all code is human-reviewed, tested, and maintained. For details on how AI agents are configured for this project, see [AGENTS.md](AGENTS.md).
+
+## 📋 Table of Contents
+
+- [Features](#features)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Setup](#setup)
+  - [Available Scripts](#available-scripts)
+- [Project Structure](#project-structure)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+
+## ✨ Features
+
+- **Turn-Based Tactical Combat** - Command fleets of Sloops, Frigates, and Flagships
+- **Fog of War System** - Limited vision with scouting and ghost ship mechanics
+- **Dynamic Environment** - Wind pushes ships, procedurally generated islands
+- **Strategic Depth** - Movement ranges, cannon combat, and boarding actions
+- **Single-Player AI Mode** - Play against an AI opponent
+- **Local Multiplayer** - Hot-seat two-player mode
+- **In-Game Bug Reporting** - One-click issue submission to GitHub
+- **Responsive Canvas** - Smooth zoom, pan, and touch controls
 
 ## Getting Started
 
@@ -139,3 +180,32 @@ Sound files should be in `client/public/assets/sounds/`. Vite serves the `public
 
 ### Import errors after migration
 All imports should use clean paths without `?v=` query strings. Vite handles cache busting automatically through content-hashed filenames in production builds.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+### Development Workflow
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Make your changes and test locally with `npm run dev`
+4. Run tests with `npm run test:logic`
+5. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+6. Push to the branch (`git push origin feature/AmazingFeature`)
+7. Open a Pull Request
+
+### AI-Assisted Contributions
+
+This project uses AI coding assistants. If you're using AI tools in your contributions:
+- Ensure all AI-generated code is reviewed and tested
+- Document any AI-assisted changes in your PR description
+- Follow the project's code style and conventions in [AGENTS.md](AGENTS.md)
+
+## License
+
+This project is currently unlicensed. All rights reserved.
+
+---
+
+**Built with** ❤️ **and AI** 🤖 | [Report a Bug](https://github.com/thomascarlyonrussell/shrouded-sails/issues) | [Request a Feature](https://github.com/thomascarlyonrussell/shrouded-sails/issues)

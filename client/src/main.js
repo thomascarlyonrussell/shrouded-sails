@@ -5,6 +5,7 @@ import { ShipPanel } from './ui/ShipPanel.js';
 import { SettingsMenu } from './ui/SettingsMenu.js';
 import { InGameSettingsPanel } from './ui/InGameSettingsPanel.js';
 import { BugReportModal } from './ui/BugReportModal.js';
+import { AboutModal } from './ui/AboutModal.js';
 import { SplashScreen } from './ui/SplashScreen.js';
 import { TutorialTour } from './ui/TutorialTour.js';
 import { AudioManager } from './audio/AudioManager.js';
@@ -21,6 +22,7 @@ class GameApp {
         this.settingsMenu = null;
         this.inGameSettingsPanel = null;
         this.bugReportModal = null;
+        this.aboutModal = null;
         this.splashScreen = null;
         this.tutorialTour = null;
         this.aiController = null;
@@ -165,6 +167,9 @@ class GameApp {
         // Start render loop
         this.start();
 
+        // Create About modal
+        this.aboutModal = new AboutModal(this.audioManager);
+
         // Create in-game audio settings panel
         const settingsRef = this.settingsMenu
             ? this.settingsMenu.getSettings()
@@ -172,6 +177,7 @@ class GameApp {
         this.inGameSettingsPanel = new InGameSettingsPanel(
             settingsRef,
             this.audioManager,
+            this.aboutModal,
             () => { if (this.game && this.game.hud) this.game.hud.closeCombatFeed(); },
             null,
             () => {
@@ -249,6 +255,10 @@ class GameApp {
         if (this.bugReportModal) {
             this.bugReportModal.destroy();
             this.bugReportModal = null;
+        }
+        if (this.aboutModal) {
+            this.aboutModal.destroy();
+            this.aboutModal = null;
         }
 
         if (this.inputHandler) {

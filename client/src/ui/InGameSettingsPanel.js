@@ -1,7 +1,8 @@
 export class InGameSettingsPanel {
-    constructor(settingsRef, audioManager, onOpen = null, onClose = null, onReportBug = null, onVisualSettingsChange = null) {
+    constructor(settingsRef, audioManager, aboutModal = null, onOpen = null, onClose = null, onReportBug = null, onVisualSettingsChange = null) {
         this.settings = settingsRef;
         this.audioManager = audioManager;
+        this.aboutModal = aboutModal;
         this.onOpen = onOpen;
         this.onClose = onClose;
         this.onReportBug = onReportBug;
@@ -24,6 +25,7 @@ export class InGameSettingsPanel {
         this.uiValue = document.getElementById('igUiVolumeValue');
         this.musicValue = document.getElementById('igMusicVolumeValue');
         this.reportBugBtn = document.getElementById('reportBugBtn');
+        this.aboutBtn = document.getElementById('aboutBtn');
         this.boundToggle = () => this.toggle();
         this.boundClose = () => this.close();
         this.boundBackdropClose = () => this.close();
@@ -31,6 +33,11 @@ export class InGameSettingsPanel {
             this.close();
             if (typeof this.onReportBug === 'function') {
                 this.onReportBug();
+            }
+        };
+        this.boundAbout = () => {
+            if (this.aboutModal) {
+                this.aboutModal.show();
             }
         };
         this.boundMuteChange = (e) => {
@@ -82,6 +89,9 @@ export class InGameSettingsPanel {
         }
         if (this.reportBugBtn) {
             this.reportBugBtn.addEventListener('click', this.boundReportBug);
+        }
+        if (this.aboutBtn) {
+            this.aboutBtn.addEventListener('click', this.boundAbout);
         }
 
         this.setupAudioControls();
