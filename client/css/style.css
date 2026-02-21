@@ -1593,6 +1593,142 @@ body.startup-overlay-active .game-container {
     margin-bottom: 12px;
 }
 
+/* About Modal */
+.about-modal {
+    width: min(100%, 600px);
+    text-align: left;
+}
+
+.about-modal h2 {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 32px;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #ecf0f1;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.about-section {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(95, 139, 177, 0.25);
+}
+
+.about-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 20px;
+}
+
+.about-section-title {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 18px;
+    letter-spacing: 1px;
+    margin: 0 0 12px;
+    color: #d4e6f5;
+}
+
+.about-tagline {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #c2d8ec;
+    margin: 0 0 12px;
+    letter-spacing: 0.5px;
+}
+
+.about-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #b9c8d6;
+    margin: 0;
+}
+
+.about-list {
+    margin: 10px 0;
+    padding-left: 20px;
+    list-style: none;
+}
+
+.about-list li {
+    margin-bottom: 8px;
+    padding-left: 6px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #b9c8d6;
+    position: relative;
+}
+
+.about-list li::before {
+    content: '•';
+    position: absolute;
+    left: -14px;
+    color: #7fa8c9;
+}
+
+.about-note {
+    margin: 12px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #a0b8cc;
+}
+
+.about-link {
+    color: #66afe6;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.about-link:hover {
+    color: #8dc5f0;
+    text-decoration: underline;
+}
+
+.about-links-list {
+    margin: 10px 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.about-links-list li {
+    margin-bottom: 10px;
+}
+
+.about-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+}
+
+.about-actions .action-btn {
+    min-width: 160px;
+}
+
+/* Mobile responsive adjustments for About Modal */
+@media (max-width: 600px) {
+    .about-modal {
+        width: min(100%, calc(100vw - 24px));
+    }
+
+    .about-modal h2 {
+        font-size: 26px;
+        letter-spacing: 1px;
+    }
+
+    .about-section-title {
+        font-size: 16px;
+    }
+
+    .about-tagline {
+        font-size: 14px;
+    }
+
+    .about-description,
+    .about-list li {
+        font-size: 13px;
+    }
+}
+
 /* Splash screen animations */
 @keyframes splashFadeIn {
     from { opacity: 0; transform: translateY(16px); }

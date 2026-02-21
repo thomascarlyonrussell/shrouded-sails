@@ -3,49 +3,32 @@
 ## Purpose
 
 Vercel deployment configuration for static frontend hosting, serverless backend functions, automatic deployment on Git push, and routing rules for API and client requests.
-
 ## Requirements
-
 ### Requirement: Vercel configuration file
+The system SHALL retain a `vercel.json` configuration file only for transition and rollback support during the migration window, and SHALL remove active production authority from Vercel once migration is accepted.
 
-The system SHALL provide a `vercel.json` configuration file at repository root that defines build commands, output directories, routing rules, and serverless function settings.
+#### Scenario: Transition configuration remains available
+- **WHEN** migration is in progress and rollback window is active
+- **THEN** `vercel.json` remains present and valid for controlled fallback deployment
+- **AND** Vercel production traffic remains secondary to Netlify production
 
-#### Scenario: Configuration file exists
-- **WHEN** repository is checked out
-- **THEN** `vercel.json` exists at root directory
-- **AND** file contains valid JSON
-- **AND** file includes build command, output directory, routes, and functions configuration
+#### Scenario: Transition configuration is decommissioned
+- **WHEN** migration acceptance criteria and rollback window are complete
+- **THEN** Vercel production authority is disabled
+- **AND** any remaining Vercel configuration is documented as legacy-only or removed
 
 ### Requirement: Frontend static hosting
+The system SHALL treat Vercel-hosted frontend delivery as temporary fallback-only behavior after Netlify production cutover.
 
-The system SHALL configure Vercel to serve the client application as a static site from the `client/dist/` directory after building with Vite.
+#### Scenario: Netlify is primary after cutover
+- **WHEN** `shroudedsails.com` resolves to Netlify production
+- **THEN** Vercel-hosted frontend is not the canonical production endpoint
+- **AND** canonical/metadata references do not point to `shrouded-sails.vercel.app`
 
-#### Scenario: Frontend build is configured
-- **WHEN** Vercel deployment runs
-- **THEN** Vercel executes build command: `npm run build:client`
-- **AND** Vercel reads static files from `client/dist/` directory
-- **AND** Vercel serves files with appropriate cache headers
-
-#### Scenario: Frontend is accessible at root URL
-- **WHEN** user visits deployed site root URL (e.g., `https://shrouded-sails.vercel.app/`)
-- **THEN** Vercel serves `client/dist/index.html`
-- **AND** game loads successfully
-- **AND** all assets (JS, CSS, sounds) load correctly
-
-### Requirement: Backend serverless functions
-
-The system SHALL configure Vercel to deploy the Bun backend as serverless functions accessible under `/api/*` routes.
-
-#### Scenario: Backend is deployed as serverless function
-- **WHEN** Vercel deployment runs
-- **THEN** Vercel deploys `server/index.ts` as serverless function
-- **AND** function uses Bun runtime (specified in `vercel.json`)
-
-#### Scenario: API routes are accessible
-- **WHEN** user sends request to `https://shrouded-sails.vercel.app/api/health`
-- **THEN** Vercel routes request to serverless function
-- **AND** function returns HTTP 200 with health check JSON
-- **AND** response time is acceptable (<2 seconds including cold start)
+#### Scenario: Fallback hosting is available during rollback window
+- **WHEN** a critical post-cutover issue is detected
+- **THEN** Vercel static hosting can be used as rollback target within the defined window
+- **AND** fallback activation follows documented runbook steps
 
 ### Requirement: Routing rules
 
@@ -63,22 +46,17 @@ The system SHALL configure routing to map `/api/*` requests to backend serverles
 - **AND** if file does not exist, serves `index.html` (SPA fallback)
 
 ### Requirement: Automatic deployment on Git push
+The system SHALL stop using Vercel automatic deployment as the production release path after migration completion.
 
-The system SHALL automatically trigger Vercel deployment when code is pushed to the main branch of the connected GitHub repository.
+#### Scenario: Migration window uses controlled fallback deploys
+- **WHEN** Netlify is primary and rollback window is active
+- **THEN** Vercel auto-deploys do not automatically become production
+- **AND** fallback deploy usage requires explicit operator action
 
-#### Scenario: Main branch triggers production deployment
-- **WHEN** code is pushed to main branch
-- **THEN** Vercel automatically starts deployment
-- **AND** Vercel builds client application
-- **AND** Vercel deploys serverless functions
-- **AND** Vercel assigns production URL
-- **AND** previous production deployment remains accessible until new deployment succeeds
-
-#### Scenario: Feature branches trigger preview deployments
-- **WHEN** code is pushed to non-main branch
-- **THEN** Vercel creates preview deployment with unique URL
-- **AND** preview deployment does not affect production
-- **AND** preview URL is commented on associated pull request (if GitHub integration enabled)
+#### Scenario: Production release path is Netlify only
+- **WHEN** migration is declared complete
+- **THEN** production deployments are triggered and promoted through Netlify workflows
+- **AND** Vercel deployment triggers are disabled or archived
 
 ### Requirement: Deployment status visibility
 
@@ -110,3 +88,4 @@ The system SHALL support environment variables for sensitive configuration (e.g.
 - **WHEN** environment variable is needed during Vite build (prefixed with `VITE_`)
 - **THEN** Vite includes variable in client bundle
 - **AND** variable is accessible via `import.meta.env.VITE_VARIABLE_NAME`
+
