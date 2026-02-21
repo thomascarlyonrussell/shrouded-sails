@@ -10,7 +10,6 @@ import { TutorialTour } from './ui/TutorialTour.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { AIController } from './ai/AIController.js';
 import { GAME_MODES } from '../../shared/constants.js';
-import { inject } from '@vercel/analytics';
 
 class GameApp {
     constructor() {
@@ -417,9 +416,6 @@ class GameApp {
 
 // Start game when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    if (import.meta.env.PROD) {
-        inject();
-    }
     const game = new GameApp();
     game.showSplashThenSettings();
 });

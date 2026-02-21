@@ -58,7 +58,10 @@ shrouded-sails/
 │   ├── constants.js     # Game constants
 │   └── package.json
 ├── package.json         # Workspace root
-├── vercel.json          # Deployment configuration
+├── vercel.json          # Legacy fallback deployment configuration
+├── netlify.toml         # Netlify build, redirects, and functions configuration
+├── netlify/
+│   └── functions/       # Netlify Functions for /api endpoints
 └── README.md
 ```
 
@@ -70,10 +73,12 @@ shrouded-sails/
 
 ## Deployment
 
-The project deploys to [Vercel](https://vercel.com/) automatically on push to `main`.
+The project deploys to [Netlify](https://www.netlify.com/) from Git.
 
-- **Frontend**: Built by Vite and served as static files from `client/dist/`
-- **Backend**: Deployed as Vercel serverless functions with Bun runtime
+- **Build command**: `npm run build:client`
+- **Publish directory**: `client/dist`
+- **SPA fallback**: `/*` rewrites to `/index.html` (configured in `netlify.toml`)
+- **API routes**: `/api/*` rewrites to Netlify Functions in `netlify/functions/`
 
 ### Bug Report API
 
@@ -101,7 +106,7 @@ Response shape:
 
 #### Required Environment Variable
 
-Set this in Vercel project settings:
+Set this in Netlify site environment variables:
 
 - `GITHUB_TOKEN`: GitHub personal access token with repository issue write access.
 
@@ -116,13 +121,7 @@ per 10-minute window.
 
 ### Manual Deploy
 
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel
-```
+Use Netlify's Git-connected deploy flow from your repository branch. For local emulation, use the Netlify CLI (`netlify dev`) with this repo's `netlify.toml`.
 
 ## Troubleshooting
 
